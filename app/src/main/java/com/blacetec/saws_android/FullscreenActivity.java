@@ -1,163 +1,243 @@
 package com.blacetec.saws_android;
 
-import android.annotation.SuppressLint;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.view.MotionEvent;
+import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+import com.pedro.encoder.input.video.CameraOpenException;
+import com.pedro.rtplibrary.rtmp.RtmpCamera1;
+import com.blacetec.saws_android.R;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import net.ossrs.rtmp.ConnectCheckerRtmp;
 
 /**
- * An example full-screen activity that shows and hides the system UI (i.e.
- * status bar and navigation/system bar) with user interaction.
+ * More documentation see:
+ * {@link com.pedro.rtplibrary.base.Camera1Base}
+ * {@link com.pedro.rtplibrary.rtmp.RtmpCamera1}
  */
-public class FullscreenActivity extends AppCompatActivity {
-    /**
-     * Whether or not the system UI should be auto-hidden after
-     * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
-     */
-    private static final boolean AUTO_HIDE = true;
+public class FullscreenActivity extends AppCompatActivity
+        implements ConnectCheckerRtmp, View.OnClickListener, SurfaceHolder.Callback {
 
-    /**
-     * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
-     * user interaction before hiding the system UI.
-     */
-    private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
+    private final String[] PERMISSIONS = {
+            Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
 
-    /**
-     * Some older devices needs a small delay between UI widget updates
-     * and a change of the status and navigation bar.
-     */
-    private static final int UI_ANIMATION_DELAY = 300;
-    private final Handler mHideHandler = new Handler();
-    private View mContentView;
-    private final Runnable mHidePart2Runnable = new Runnable() {
-        @SuppressLint("InlinedApi")
-        @Override
-        public void run() {
-            // Delayed removal of status and navigation bar
+    private RtmpCamera1 rtmpCamera1;
+    private Button button;
+    private Button bRecord;
+    private EditText etUrl;
 
-            // Note that some of these constants are new as of API 16 (Jelly Bean)
-            // and API 19 (KitKat). It is safe to use them, as they are inlined
-            // at compile-time and do nothing on earlier devices.
-            mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-        }
-    };
-    private View mControlsView;
-    private final Runnable mShowPart2Runnable = new Runnable() {
-        @Override
-        public void run() {
-            // Delayed display of UI elements
-            ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null) {
-                actionBar.show();
-            }
-            mControlsView.setVisibility(View.VISIBLE);
-        }
-    };
-    private boolean mVisible;
-    private final Runnable mHideRunnable = new Runnable() {
-        @Override
-        public void run() {
-            hide();
-        }
-    };
-    /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
-     */
-    private final View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
-        @Override
-        public boolean onTouch(View view, MotionEvent motionEvent) {
-            if (AUTO_HIDE) {
-                delayedHide(AUTO_HIDE_DELAY_MILLIS);
-            }
-            return false;
-        }
-    };
+    private String currentDateAndTime = "";
+    private File folder = new File(Environment.getExternalStorageDirectory().getAbsolutePath()
+            + "/rtmp-rtsp-stream-client-java");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        if (!hasPermissions(this, PERMISSIONS)) {
+            ActivityCompat.requestPermissions(this, PERMISSIONS, 1);
+        }
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_fullscreen);
-
-        mVisible = true;
-        mControlsView = findViewById(R.id.fullscreen_content_controls);
-        mContentView = findViewById(R.id.fullscreen_content);
-
-
-        // Set up the user interaction to manually show or hide the system UI.
-        mContentView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                toggle();
-            }
-        });
-
-        // Upon interacting with UI controls, delay any scheduled hide()
-        // operations to prevent the jarring behavior of controls going away
-        // while interacting with the UI.
-        findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
+        SurfaceView surfaceView = findViewById(R.id.surfaceView);
+        button = findViewById(R.id.b_start_stop);
+        button.setOnClickListener(this);
+        bRecord = findViewById(R.id.b_record);
+        bRecord.setOnClickListener(this);
+        Button switchCamera = findViewById(R.id.switch_camera);
+        switchCamera.setOnClickListener(this);
+        etUrl = findViewById(R.id.et_rtp_url);
+        etUrl.setHint(R.string.hint_rtmp);
+        rtmpCamera1 = new RtmpCamera1(surfaceView, this);
+        rtmpCamera1.setReTries(10);
+        surfaceView.getHolder().addCallback(this);
     }
 
     @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-
-        // Trigger the initial hide() shortly after the activity has been
-        // created, to briefly hint to the user that UI controls
-        // are available.
-        delayedHide(100);
+    public void onConnectionSuccessRtmp() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(FullscreenActivity.this, "Connection success", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    private void toggle() {
-        if (mVisible) {
-            hide();
-        } else {
-            show();
+    @Override
+    public void onConnectionFailedRtmp(final String reason) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (rtmpCamera1.shouldRetry(reason)) {
+                    Toast.makeText(FullscreenActivity.this, "Retry", Toast.LENGTH_SHORT)
+                            .show();
+                    rtmpCamera1.reTry(5000);  //Wait 5s and retry connect stream
+                } else {
+                    Toast.makeText(FullscreenActivity.this, "Connection failed. " + reason, Toast.LENGTH_SHORT)
+                            .show();
+                    rtmpCamera1.stopStream();
+                    button.setText(R.string.start_button);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onDisconnectRtmp() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(FullscreenActivity.this, "Disconnected", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void onAuthErrorRtmp() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(FullscreenActivity.this, "Auth error", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void onAuthSuccessRtmp() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(FullscreenActivity.this, "Auth success", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.b_start_stop:
+                if (!rtmpCamera1.isStreaming()) {
+                    if (rtmpCamera1.isRecording()
+                            || rtmpCamera1.prepareAudio() && rtmpCamera1.prepareVideo()) {
+                        button.setText(R.string.stop_button);
+                        rtmpCamera1.startStream(etUrl.getText().toString());
+                    } else {
+                        Toast.makeText(this, "Error preparing stream, This device cant do it",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    button.setText(R.string.start_button);
+                    rtmpCamera1.stopStream();
+                }
+                break;
+            case R.id.switch_camera:
+                try {
+                    rtmpCamera1.switchCamera();
+                } catch (CameraOpenException e) {
+                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case R.id.b_record:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    if (!rtmpCamera1.isRecording()) {
+                        try {
+                            if (!folder.exists()) {
+                                folder.mkdir();
+                            }
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+                            currentDateAndTime = sdf.format(new Date());
+                            if (!rtmpCamera1.isStreaming()) {
+                                if (rtmpCamera1.prepareAudio() && rtmpCamera1.prepareVideo()) {
+                                    rtmpCamera1.startRecord(
+                                            folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
+                                    bRecord.setText(R.string.stop_record);
+                                    Toast.makeText(this, "Recording... ", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(this, "Error preparing stream, This device cant do it",
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            } else {
+                                rtmpCamera1.startRecord(
+                                        folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
+                                bRecord.setText(R.string.stop_record);
+                                Toast.makeText(this, "Recording... ", Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (IOException e) {
+                            rtmpCamera1.stopRecord();
+                            bRecord.setText(R.string.start_record);
+                            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        rtmpCamera1.stopRecord();
+                        bRecord.setText(R.string.start_record);
+                        Toast.makeText(this,
+                                "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
+                                Toast.LENGTH_SHORT).show();
+                        currentDateAndTime = "";
+                    }
+                } else {
+                    Toast.makeText(this, "You need min JELLY_BEAN_MR2(API 18) for do it...",
+                            Toast.LENGTH_SHORT).show();
+                }
+                break;
+            default:
+                break;
         }
     }
 
-    private void hide() {
-        // Hide UI first
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.hide();
+    @Override
+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+        rtmpCamera1.startPreview();
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && rtmpCamera1.isRecording()) {
+            rtmpCamera1.stopRecord();
+            bRecord.setText(R.string.start_record);
+            Toast.makeText(this,
+                    "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
+                    Toast.LENGTH_SHORT).show();
+            currentDateAndTime = "";
         }
-        mControlsView.setVisibility(View.GONE);
-        mVisible = false;
-
-        // Schedule a runnable to remove the status and navigation bar after a delay
-        mHideHandler.removeCallbacks(mShowPart2Runnable);
-        mHideHandler.postDelayed(mHidePart2Runnable, UI_ANIMATION_DELAY);
+        if (rtmpCamera1.isStreaming()) {
+            rtmpCamera1.stopStream();
+            button.setText(getResources().getString(R.string.start_button));
+        }
+        rtmpCamera1.stopPreview();
     }
 
-    @SuppressLint("InlinedApi")
-    private void show() {
-        // Show the system bar
-        mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        mVisible = true;
-
-        // Schedule a runnable to display UI elements after a delay
-        mHideHandler.removeCallbacks(mHidePart2Runnable);
-        mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY);
-    }
-
-    /**
-     * Schedules a call to hide() in delay milliseconds, canceling any
-     * previously scheduled calls.
-     */
-    private void delayedHide(int delayMillis) {
-        mHideHandler.removeCallbacks(mHideRunnable);
-        mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    private boolean hasPermissions(Context context, String... permissions) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

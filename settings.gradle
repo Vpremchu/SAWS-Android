@@ -1,1 +1,2 @@
-include ':app'
+include ':app', ':rtmp', ':encoder', ':rtsp', ':rtplibrary'
+include ':libstreaming'
