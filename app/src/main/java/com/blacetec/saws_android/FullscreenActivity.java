@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
+
 import net.ossrs.rtmp.ConnectCheckerRtmp;
 
 /**
@@ -63,8 +65,6 @@ public class FullscreenActivity extends AppCompatActivity
         bRecord.setOnClickListener(this);
         Button switchCamera = findViewById(R.id.switch_camera);
         switchCamera.setOnClickListener(this);
-        etUrl = findViewById(R.id.et_rtp_url);
-        etUrl.setHint(R.string.hint_rtmp);
         rtmpCamera1 = new RtmpCamera1(surfaceView, this);
         rtmpCamera1.setReTries(10);
         surfaceView.getHolder().addCallback(this);
@@ -137,7 +137,7 @@ public class FullscreenActivity extends AppCompatActivity
                     if (rtmpCamera1.isRecording()
                             || rtmpCamera1.prepareAudio() && rtmpCamera1.prepareVideo()) {
                         button.setText(R.string.stop_button);
-                        rtmpCamera1.startStream(etUrl.getText().toString());
+                        rtmpCamera1.startStream("rtmp://141.138.142.48/live/TEST");
                     } else {
                         Toast.makeText(this, "Error preparing stream, This device cant do it",
                                 Toast.LENGTH_SHORT).show();
