@@ -1,5 +1,6 @@
 package com.blacetec.saws_android.ui.login;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
@@ -32,6 +33,13 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.login_activity);
         loginViewModel = ViewModelProviders.of(this, new LoginViewModelFactory())
                 .get(LoginViewModel.class);
+
+        //Change the action bar name
+        try {
+            getSupportActionBar().setTitle("Seechange Login");
+        } catch(Exception e){
+            System.out.println(e);
+        }
 
         final EditText usernameEditText = findViewById(R.id.username);
         final EditText passwordEditText = findViewById(R.id.password);
