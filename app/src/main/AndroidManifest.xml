@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.blacetec.saws_android.liveVideoBroadcaster">
+    package="liveVideoBroadcaster">
 
     <supports-screens
         android:largeScreens="true"
@@ -26,21 +26,22 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
-        <activity android:name="com.blacetec.saws_android.MainActivity">
+        android:theme="@style/AppTheme"
+        tools:ignore="GoogleAppIndexingWarning">
+        <activity
+            android:name="presentation.LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <activity android:name="com.blacetec.saws_android.liveVideoBroadcaster.LiveVideoBroadcasterActivity"
+        <activity android:name="liveVideoBroadcaster.LiveVideoBroadcasterActivity"
             android:theme="@style/AppThemeDark"
             android:configChanges="orientation|keyboardHidden|screenSize"
             />
 
-        <activity android:name="com.blacetec.saws_android.liveVideoPlayer.LiveVideoPlayerActivity"
+        <activity android:name="liveVideoPlayer.LiveVideoPlayerActivity"
             android:theme="@style/AppThemeDark"
             />
 
