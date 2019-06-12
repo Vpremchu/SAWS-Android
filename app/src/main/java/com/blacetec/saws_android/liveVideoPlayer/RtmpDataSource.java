@@ -21,6 +21,7 @@ public class RtmpDataSource implements DataSource {
     }
 
     private final RtmpClient rtmpClient;
+
     private Uri uri;
 
     public RtmpDataSource() {
