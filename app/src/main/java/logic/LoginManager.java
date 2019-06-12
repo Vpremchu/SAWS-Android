@@ -37,7 +37,8 @@ public class LoginManager {
     public void login() {
         if (this.onLoginListener != null) {
             if (this.username != null & this.password != null) {
-                //TODO - finish
+                LoginTask task = new LoginTask(this);
+                task.execute(this.username, this.password);
             } else {
                 throw new NullPointerException("No login details defined.");
             }
@@ -66,7 +67,7 @@ public class LoginManager {
             DataOutputStream output = null;
 
             try {
-                URL url = new URL("localhost:3000/api/account"); //TODO - replace placeholder
+                URL url = new URL("https://saws-api.herokuapp.com/api/login");
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setConnectTimeout(2000);
                 connection.setRequestMethod("POST");
