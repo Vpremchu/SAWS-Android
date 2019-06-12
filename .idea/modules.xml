@@ -4,7 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/SAWSAndroid.iml" filepath="$PROJECT_DIR$/SAWSAndroid.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/rtmppublisher/rtmppublisher.iml" filepath="$PROJECT_DIR$/rtmppublisher/rtmppublisher.iml" />
+      <module fileurl="file://$PROJECT_DIR$/liveVideoBroadcasterSDK/liveVideoBroadcasterSDK.iml" filepath="$PROJECT_DIR$/liveVideoBroadcasterSDK/liveVideoBroadcasterSDK.iml" />
     </modules>
   </component>
 </project>
