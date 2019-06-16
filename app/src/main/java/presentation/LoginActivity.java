@@ -33,6 +33,10 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_activity);
 
+        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+
         //Change the action bar name
         try {
             getSupportActionBar().setTitle("Seechange Login");
@@ -44,7 +48,7 @@ public class LoginActivity extends AppCompatActivity {
         this.onLoginListener = new OnLoginListener() {
             @Override
             public void onSuccess(String token, String username) {
-                Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();

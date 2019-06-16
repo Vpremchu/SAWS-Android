@@ -36,13 +36,12 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="presentation.MainActivity">
+            </activity>
+
         <activity android:name="liveVideoBroadcaster.LiveVideoBroadcasterActivity"
             android:theme="@style/AppThemeDark"
             android:configChanges="orientation|keyboardHidden|screenSize"
-            />
-
-        <activity android:name="liveVideoPlayer.LiveVideoPlayerActivity"
-            android:theme="@style/AppThemeDark"
             />
 
         <service android:name="io.antmedia.android.broadcaster.LiveVideoBroadcaster" />

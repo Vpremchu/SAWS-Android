@@ -79,6 +79,7 @@ public class LoginManager {
                 JSONObject json = new JSONObject();
                 json.put("username", username);
                 json.put("password", password);
+                json.put("uuid", "");
 
                 output = new DataOutputStream(connection.getOutputStream());
                 output.writeBytes(json.toString());
