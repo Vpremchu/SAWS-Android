@@ -31,7 +31,10 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.BasicNetwork;
 import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -52,6 +55,7 @@ public class LoginActivity extends AppCompatActivity {
     private OnLoginListener onLoginListener;
     private String username;
     private String password;
+    private RequestQueue queue = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -65,23 +69,11 @@ public class LoginActivity extends AppCompatActivity {
             System.out.println(e);
         }
 
+        this.queue = startQueue();
+
         getUserByUUID();
 
-        this.loginManager = new LoginManager();
-        this.onLoginListener = new OnLoginListener() {
-            @Override
-            public void onSuccess(String token, String username) {
-                Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onFailure(int code, String message) {
-                Snackbar.make(getCurrentFocus(), message, Snackbar.LENGTH_LONG).show();
-            }
-        };
+        startLoginListener();
 
         final EditText usernameEditText = findViewById(R.id.username);
         final EditText passwordEditText = findViewById(R.id.password);
@@ -97,13 +89,19 @@ public class LoginActivity extends AppCompatActivity {
                 InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
                 Objects.requireNonNull(inputManager).hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
-                loginManager
-                        .setLoginDetails(username, password)
-                        .setOnLoginListener(onLoginListener)
-                        .login();
+                LoginUserWithUUID(username, password);
             }
         });
 
+    }
+
+    public RequestQueue startQueue() {
+        RequestQueue requestQueue;
+        Cache cache = new DiskBasedCache(getCacheDir(), 1024 * 1024);
+        Network network = new BasicNetwork(new HurlStack());
+        requestQueue = new RequestQueue(cache, network);
+        requestQueue.start();
+        return requestQueue;
     }
 
     @SuppressLint("HardwareIds")
@@ -125,32 +123,26 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     public void getUserByUUID() {
-
-        RequestQueue requestQueue;
-
-        // Instantiate the cache
-        Cache cache = new DiskBasedCache(getCacheDir(), 1024 * 1024); // 1MB cap
-
-        // Set up the network to use HttpURLConnection as the HTTP client.
-        Network network = new BasicNetwork(new HurlStack());
-
-        // Instantiate the RequestQueue with the cache and network.
-        requestQueue = new RequestQueue(cache, network);
-
-        // Start the queue
-        requestQueue.start();
-
         // Create new request
-        String url = "http://saws-api.herokuapp.com/api//usersuuid";
+        String url = "http://saws-api.herokuapp.com/api/usersuuid";
         StringRequest MyStringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                Toast.makeText(LoginActivity.this, response, Toast.LENGTH_SHORT).show();
+                try {
+                    if (response == null || response.equals("null")) {
+                        Toast.makeText(LoginActivity.this, "User not known, please login using credentials", Toast.LENGTH_LONG).show();
+                    } else {
+                        JSONObject obj = new JSONObject(response);
+                        loginUser(obj.getString("username"), obj.getString("password"));
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(LoginActivity.this, "error: " + e, Toast.LENGTH_LONG).show();
+                }
             }
         }, new Response.ErrorListener() { //Create an error listener to handle errors appropriately.
             @Override
             public void onErrorResponse(VolleyError error) {
-                Toast.makeText(LoginActivity.this, "No user found! error: " + error, Toast.LENGTH_LONG).show();
+                Toast.makeText(LoginActivity.this, "error: " + error, Toast.LENGTH_LONG).show();
             }
         }) {
             protected Map<String, String> getParams() {
@@ -159,14 +151,78 @@ public class LoginActivity extends AppCompatActivity {
                 return MyData;
             }
         };
-        requestQueue.add(MyStringRequest);
+
+        this.queue.add(MyStringRequest);
+    }
+
+    public void loginUser(String username, String password) {
+        loginManager
+                .setLoginDetails(username, password)
+                .setOnLoginListener(onLoginListener)
+                .login();
+    }
+
+    public void startLoginListener() {
+        this.loginManager = new LoginManager();
+        this.onLoginListener = new OnLoginListener() {
+            @Override
+            public void onSuccess(String token, String username) {
+                Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(int code, String message) {
+                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            }
+        };
+    }
+
+    public void LoginUserWithUUID(final String name, final String pass) {
+        String url = "http://saws-api.herokuapp.com/api/loginuuid";
+        StringRequest MyStringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    if (response == null || response.equals("null")) {
+                        Toast.makeText(LoginActivity.this, "User not known, please check the credentials", Toast.LENGTH_LONG).show();
+                    } else {
+                        JSONObject obj = new JSONObject(response);
+                        String username = obj.getString("username");
+                        Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
+
+                        Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(LoginActivity.this, "error: " + e, Toast.LENGTH_LONG).show();
+                }
+            }
+        }, new Response.ErrorListener() { //Create an error listener to handle errors appropriately.
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(LoginActivity.this, "error: " + error, Toast.LENGTH_LONG).show();
+            }
+        }) {
+            protected Map<String, String> getParams() {
+                Map<String, String> MyData = new HashMap<String, String>();
+                MyData.put("username", name);
+                MyData.put("password", pass);
+                MyData.put("UUID", getUUID());
+                return MyData;
+            }
+        };
+        this.queue.add(MyStringRequest);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == PERMISSION_READ_STATE)
             if (grantResults.length <= 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(LoginActivity.this, "Permission denied to read your Phone state", Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, "Permission denied to read your Phone state", Toast.LENGTH_LONG).show();
             }
     }
 }
