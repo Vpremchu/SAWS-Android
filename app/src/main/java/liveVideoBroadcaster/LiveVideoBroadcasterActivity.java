@@ -1,12 +1,15 @@
 package liveVideoBroadcaster;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.hardware.Camera;
 import android.net.Uri;
@@ -20,8 +23,10 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,20 +35,41 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.android.volley.Cache;
+import com.android.volley.Network;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.BasicNetwork;
+import com.android.volley.toolbox.DiskBasedCache;
+import com.android.volley.toolbox.HurlStack;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 
 import io.antmedia.android.broadcaster.ILiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.LiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.utils.Resolution;
+
+import static android.provider.Settings.Secure.ANDROID_ID;
 
 
 public class LiveVideoBroadcasterActivity extends AppCompatActivity {
 
     private static final String RTMP_BASE_URL = "rtmp://141.138.142.48/live/";
 
+    private static final int PERMISSION_READ_STATE = 0;
     private static final String TAG = LiveVideoBroadcasterActivity.class.getSimpleName();
     private ViewGroup mRootView;
     boolean mIsRecording = false;
@@ -58,6 +84,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     private GLSurfaceView mGLView;
     private ILiveVideoBroadcaster mLiveVideoBroadcaster;
     private Button mBroadcastControlButton;
+    private RequestQueue requestQueue;
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -81,6 +108,16 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     };
 
 
+    public RequestQueue startQueue() {
+        RequestQueue requestQueue;
+        Cache cache = new DiskBasedCache(getCacheDir(), 1024 * 1024);
+        Network network = new BasicNetwork(new HurlStack());
+        requestQueue = new RequestQueue(cache, network);
+        requestQueue.start();
+        return requestQueue;
+    }
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -94,6 +131,8 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         mLiveVideoBroadcasterServiceIntent = new Intent(this, LiveVideoBroadcaster.class);
         //this makes service do its job until done
         startService(mLiveVideoBroadcasterServiceIntent);
+
+        this.requestQueue = startQueue();
 
         setContentView(R.layout.activity_live_video_broadcaster);
 
@@ -234,6 +273,8 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
                 if (!mLiveVideoBroadcaster.isConnected()) {
                     String streamName = mStreamNameEditText.getText().toString();
 
+                    startStreamRequest();
+
                     new AsyncTask<String, String, Boolean>() {
                         ContentLoadingProgressBar
                                 progressBar;
@@ -355,6 +396,40 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }
     }
 
+    public void startStreamRequest() {
+        // Create new request
+        String url = "http://saws-api.herokuapp.com/api/stream";
+        StringRequest MyStringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    if (response == null || response.equals("null")) {
+                        Toast.makeText(LiveVideoBroadcasterActivity.this, "values are not correct", Toast.LENGTH_LONG).show();
+                    } else {
+                        JSONObject obj = new JSONObject(response);
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + e, Toast.LENGTH_LONG).show();
+                }
+            }
+        }, new Response.ErrorListener() { //Create an error listener to handle errors appropriately.
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + error, Toast.LENGTH_LONG).show();
+            }
+        }) {
+            protected Map<String, String> getParams() {
+                Map<String, String> MyData = new HashMap<String, String>();
+                MyData.put("live", "True");
+                MyData.put("date", new Date().toString());
+                MyData.put("uuid", getUUID());
+                return MyData;
+            }
+        };
+
+        this.requestQueue.add(MyStringRequest);
+    }
+
     public static String getDurationString(int seconds) {
 
         if(seconds < 0 || seconds > 2000000)//there is an codec problem and duration is not set correctly,so display meaningfull string
@@ -380,5 +455,23 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }
 
         return String.valueOf(number);
+    }
+
+    @SuppressLint("HardwareIds")
+    public String getUUID() {
+        final TelephonyManager tm = (TelephonyManager) getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
+
+        final String tmDevice, tmSerial, androidId;
+
+        if (ContextCompat.checkSelfPermission(LiveVideoBroadcasterActivity.this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(LiveVideoBroadcasterActivity.this, new String[]{Manifest.permission.READ_PHONE_STATE}, PERMISSION_READ_STATE);
+
+        tmDevice = "" + tm.getDeviceId();
+        tmSerial = "" + tm.getSimSerialNumber();
+        androidId = "" + android.provider.Settings.Secure.getString(getContentResolver(), ANDROID_ID);
+
+        UUID deviceUuid = new UUID(androidId.hashCode(), ((long)tmDevice.hashCode() << 32) | tmSerial.hashCode());
+        return deviceUuid.toString();
     }
 }
