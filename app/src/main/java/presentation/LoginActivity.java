@@ -86,7 +86,7 @@ public class LoginActivity extends AppCompatActivity {
                 username = usernameEditText.getText().toString().trim();
                 password = passwordEditText.getText().toString();
 
-                InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 Objects.requireNonNull(inputManager).hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
                 LoginUserWithUUID(username, password);
@@ -118,7 +118,7 @@ public class LoginActivity extends AppCompatActivity {
         tmSerial = "" + tm.getSimSerialNumber();
         androidId = "" + android.provider.Settings.Secure.getString(getContentResolver(), ANDROID_ID);
 
-        UUID deviceUuid = new UUID(androidId.hashCode(), ((long)tmDevice.hashCode() << 32) | tmSerial.hashCode());
+        UUID deviceUuid = new UUID(androidId.hashCode(), ((long) tmDevice.hashCode() << 32) | tmSerial.hashCode());
         return deviceUuid.toString();
     }
 
@@ -186,11 +186,12 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(String response) {
                 try {
+                    JSONObject obj = new JSONObject(response);
                     if (response == null || response.equals("null")) {
                         Toast.makeText(LoginActivity.this, "User not known, please check the credentials", Toast.LENGTH_LONG).show();
                     } else {
-                        JSONObject obj = new JSONObject(response);
                         String username = obj.getString("username");
+                        //TODO - save username
                         Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
 
                         Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);

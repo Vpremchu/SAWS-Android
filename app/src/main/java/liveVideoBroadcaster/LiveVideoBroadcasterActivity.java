@@ -38,6 +38,7 @@ import java.util.TimerTask;
 import io.antmedia.android.broadcaster.ILiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.LiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.utils.Resolution;
+import presentation.ChatActivity;
 
 
 public class LiveVideoBroadcasterActivity extends AppCompatActivity {
@@ -58,6 +59,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     private GLSurfaceView mGLView;
     private ILiveVideoBroadcaster mLiveVideoBroadcaster;
     private Button mBroadcastControlButton;
+    private Button toggleChatButton;
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -112,6 +114,17 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         if (mGLView != null) {
             mGLView.setEGLContextClientVersion(2);     // select GLES 2.0
         }
+
+        //Chat button - open chat activity
+        toggleChatButton = findViewById(R.id.toggle_chat);
+        toggleChatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), ChatActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            }
+        });
     }
 
     public void changeCamera(View v) {

@@ -103,5 +103,16 @@
             android:layout_gravity="center_horizontal"
             android:textAppearance="?android:textAppearanceMedium"
             />
+
+        <Button
+            android:id="@+id/toggle_chat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Base.Widget.AppCompat.Button.Colored"
+            android:textColor="@android:color/white"
+            android:text="Chat"
+            android:onClick="toggleBroadcasting"
+            android:layout_gravity="center_horizontal"
+            android:textAppearance="?android:textAppearanceMedium" />
     </LinearLayout>
 </android.support.design.widget.CoordinatorLayout>
