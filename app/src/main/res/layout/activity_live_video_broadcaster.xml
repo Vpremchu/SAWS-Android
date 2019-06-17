@@ -2,6 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".LiveVideoBroadcasterActivity"
     android:id="@+id/root_layout">
 
@@ -29,6 +30,34 @@
     <!--
    </com.google.android.exoplayer.AspectRatioFrameLayout>
     -->
+
+
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:paddingBottom="150dp"
+        android:background="@android:color/white"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+
+        <TextView
+            android:id="@+id/chatView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="80dp"
+            android:layout_marginBottom="80dp"
+            android:text=""
+            android:textColor="@color/black_overlay"
+            android:textSize="30sp"
+            tools:layout_editor_absoluteX="1dp"
+            tools:layout_editor_absoluteY="-3dp" />
+    </ScrollView>
 
 
     <LinearLayout
@@ -92,27 +121,34 @@
             android:hint="@string/stream_name"
             android:textAppearance="?android:textAppearanceMedium"
             />
-        <Button
-            android:id="@+id/toggle_broadcasting"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            style="@style/Base.Widget.AppCompat.Button.Colored"
-            android:textColor="@android:color/white"
-            android:text="@string/start_broadcasting"
-            android:onClick="toggleBroadcasting"
-            android:layout_gravity="center_horizontal"
-            android:textAppearance="?android:textAppearanceMedium"
-            />
+            android:layout_gravity="bottom"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/toggle_broadcasting"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/Base.Widget.AppCompat.Button.Colored"
+                android:textColor="@android:color/white"
+                android:text="@string/start_broadcasting"
+                android:onClick="toggleBroadcasting"
+                android:layout_gravity="center_horizontal"
+                android:textAppearance="?android:textAppearanceMedium"
+                />
 
-        <Button
-            android:id="@+id/toggle_chat"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/Base.Widget.AppCompat.Button.Colored"
-            android:textColor="@android:color/white"
-            android:text="Chat"
-            android:onClick="toggleBroadcasting"
-            android:layout_gravity="center_horizontal"
-            android:textAppearance="?android:textAppearanceMedium" />
+            <Button
+                android:id="@+id/toggle_chat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/Base.Widget.AppCompat.Button.Colored"
+                android:textColor="@android:color/white"
+                android:text="@string/chat"
+                android:onClick="toggleBroadcasting"
+                android:layout_gravity="center_horizontal"
+                android:textAppearance="?android:textAppearanceMedium" />
+
+        </LinearLayout>
     </LinearLayout>
 </android.support.design.widget.CoordinatorLayout>

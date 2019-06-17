@@ -29,9 +29,18 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.github.nkzawa.emitter.Emitter;
+import com.github.nkzawa.socketio.client.IO;
+import com.github.nkzawa.socketio.client.Socket;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -39,6 +48,8 @@ import io.antmedia.android.broadcaster.ILiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.LiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.utils.Resolution;
 import presentation.ChatActivity;
+
+import static java.util.Objects.requireNonNull;
 
 
 public class LiveVideoBroadcasterActivity extends AppCompatActivity {
@@ -60,6 +71,10 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     private ILiveVideoBroadcaster mLiveVideoBroadcaster;
     private Button mBroadcastControlButton;
     private Button toggleChatButton;
+
+    private Socket mSocket;
+    private TextView chatView;
+    private ScrollView scrollView;
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -115,13 +130,37 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
             mGLView.setEGLContextClientVersion(2);     // select GLES 2.0
         }
 
+
+        try {
+            //Set up connection parameters
+            String url = "https://saws-api.herokuapp.com/chat";
+            IO.Options mOptions = new IO.Options();
+            mOptions.query = "stream=" + "Rick"; //TODO - Replace static username
+
+            //Create the socket with these parameters
+            mSocket = IO.socket(url, mOptions);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        //Tell the socket to listen for incoming messages
+        mSocket.on("MESSAGE", onNewMessage);
+        //Link scrollView to the corresponding ScrollView
+        scrollView = findViewById(R.id.scrollView);
+        //Link chatView with the corresponding TextView
+        chatView = findViewById(R.id.chatView);
+        //Connect with the socket and its given parameters
+        mSocket.connect();
+
         //Chat button - open chat activity
         toggleChatButton = findViewById(R.id.toggle_chat);
         toggleChatButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(), ChatActivity.class);
-                startActivity(intent);
+                if (!scrollView.isShown()) {
+                    scrollView.setVisibility(View.VISIBLE);
+                } else {
+                    scrollView.setVisibility(View.GONE);
+                }
             }
         });
     }
@@ -393,4 +432,33 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
 
         return String.valueOf(number);
     }
+
+
+
+    private Emitter.Listener onNewMessage = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject data = (JSONObject) args[0];
+                    String username;
+                    String message;
+                    try {
+                        username = data.getString("username");
+                        message = data.getString("message");
+                        //Update chatview with incoming messages
+                        chatView.append(username + ": " + message + '\n');
+                        //Scroll down with the new messages
+                        scrollView.fullScroll(ScrollView.FOCUS_DOWN);
+                    } catch (JSONException e) {
+                        return;
+                    }
+
+                    // add the message to view
+                    //addMessage(username, message);
+                }
+            });
+        }
+    };
 }

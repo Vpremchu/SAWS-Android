@@ -24,7 +24,6 @@ public class ChatActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
-        {
             try {
                 //Set up connection parameters
                 String url = "https://saws-api.herokuapp.com/chat";
@@ -36,7 +35,6 @@ public class ChatActivity extends AppCompatActivity {
             } catch (Exception e) {
                 System.out.println(e);
             }
-        }
         //Tell the socket to listen for incoming messages
         mSocket.on("MESSAGE", onNewMessage);
         //Link scrollView to the corresponding ScrollView
