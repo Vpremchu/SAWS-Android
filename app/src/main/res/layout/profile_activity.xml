@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/activity_example_rtmp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+
+    <ImageView
+        android:layout_width="400px"
+        android:layout_height="250px"
+        android:layout_marginStart="50px"
+        android:id="@+id/avatar"
+        />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="200px"
+        android:layout_marginStart="450px"
+        android:id="@+id/userName"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="200px"
+        android:layout_marginStart="450px"
+        android:layout_marginTop="100px"
+        android:id="@+id/followersCount"
+        />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="200px"
+        android:layout_marginStart="450px"
+        android:layout_marginTop="100px"
+        android:id="@+id/satoshiCount"
+        />
+
+
+</RelativeLayout>
