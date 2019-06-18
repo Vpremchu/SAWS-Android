@@ -268,7 +268,6 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        stopStreamRequest();
         unbindService(mConnection);
     }
 
@@ -344,6 +343,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
                             else {
                                 Snackbar.make(mRootView, R.string.stream_not_started, Snackbar.LENGTH_LONG).show();
 
+                                stopStreamRequest();
                                 triggerStopRecording();
                             }
                         }
@@ -359,6 +359,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }
         else
         {
+            stopStreamRequest();
             triggerStopRecording();
         }
 
