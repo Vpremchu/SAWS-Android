@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
@@ -58,6 +59,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -93,10 +95,13 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     private String UUID;
 
     public RecyclerView myRecylerView ;
-    public List<MessageIO> messageIOList;
+    public List<MessageIO> MessageIOList;
     public ChatBoxAdapter chatBoxAdapter;
-    public  EditText messagetxt ;
-    public  Button send ;
+    public  EditText messagetxt;
+    public  Button send;
+
+
+    private Map<String, Integer> userColors = new HashMap<>();
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -156,27 +161,24 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
 
         mTimerHandler = new TimerHandler();
 
-        mRootView = (ViewGroup)findViewById(R.id.root_layout);
-        mSettingsButton = (ImageButton)findViewById(R.id.settings_button);
-        mStreamLiveStatus = (TextView) findViewById(R.id.stream_live_status);
+        mRootView =findViewById(R.id.root_layout);
+        mSettingsButton = findViewById(R.id.settings_button);
+        mStreamLiveStatus = findViewById(R.id.stream_live_status);
 
-        mBroadcastControlButton = (Button) findViewById(R.id.toggle_broadcasting);
-        chatView = (LinearLayout) findViewById(R.id.chatView);
+        mBroadcastControlButton = findViewById(R.id.toggle_broadcasting);
 
-        messagetxt = (EditText) findViewById(R.id.message) ;
-        send = (Button)findViewById(R.id.send);
-        messageIOList = new ArrayList<>();
-        myRecylerView = (RecyclerView) findViewById(R.id.messagelist);
-        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
-        myRecylerView.setLayoutManager(mLayoutManager);
-        myRecylerView.setItemAnimator(new DefaultItemAnimator());
+        chatView = findViewById(R.id.chatView);
 
         // Configure the GLSurfaceView.  This will start the Renderer thread, with an
         // appropriate EGL activity.
-        mGLView = (GLSurfaceView) findViewById(R.id.cameraPreview_surfaceView);
+        mGLView = findViewById(R.id.cameraPreview_surfaceView);
         if (mGLView != null) {
             mGLView.setEGLContextClientVersion(2);     // select GLES 2.0
         }
+
+
+        messagetxt =  findViewById(R.id.message) ;
+        send = findViewById(R.id.send);
 
         try {
             //Set up connection parameters
@@ -191,48 +193,34 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }
         mSocket.connect();
 
+        MessageIOList = new ArrayList<>();
+        myRecylerView = findViewById(R.id.messagelist);
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+        myRecylerView.setLayoutManager(mLayoutManager);
+        myRecylerView.setItemAnimator(new DefaultItemAnimator());
+
+
+
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(!messagetxt.getText().toString().isEmpty()){
+                    try {
+                        JSONObject chatMessage = new JSONObject();
+                        chatMessage.put("username", globalUsername);
+                        chatMessage.put("message", messagetxt.getText().toString());
 
-                    mSocket.emit("messagedetection", globalUsername, messagetxt.getText().toString());
+                        mSocket.emit("new-message", chatMessage);
 
-                    messagetxt.setText(" ");
+                        messagetxt.setText(" ");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
 
-        mSocket.on("userjoinedthechat", new Emitter.Listener() {
-            @Override
-            public void call(final Object... args) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        String data = (String) args[0];
-                        // get the extra data from the fired event and display a toast
-                        Toast.makeText(LiveVideoBroadcasterActivity.this, data, Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
-
-        mSocket.on("userdisconnect", new Emitter.Listener() {
-            @Override
-            public void call(final Object... args) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        String data = (String) args[0];
-
-                        Toast.makeText(LiveVideoBroadcasterActivity.this,data,Toast.LENGTH_SHORT).show();
-
-                    }
-                });
-            }
-        });
-
-        mSocket.on("message", new Emitter.Listener() {
+        mSocket.on("MESSAGE", new Emitter.Listener() {
             @Override
             public void call(final Object... args) {
                 runOnUiThread(new Runnable() {
@@ -240,26 +228,32 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
                     public void run() {
                         JSONObject data = (JSONObject) args[0];
                         try {
-                            String nickname = data.getString("senderNickname");
+                            String username = data.getString("username");
                             String message = data.getString("message");
 
-                            MessageIO m = new MessageIO(nickname, message);
+                            if(!userColors.containsKey(username)) {
+                                Random rnd = new Random();
+                                int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
 
-                            messageIOList.add(m);
+                                userColors.put(username, color);
+                            }
 
-                            chatBoxAdapter = new ChatBoxAdapter(messageIOList);
-
+                            MessageIO m = new MessageIO(username, message, userColors.get(username));
+                            MessageIOList.add(m);
+                            chatBoxAdapter = new ChatBoxAdapter(MessageIOList);
                             chatBoxAdapter.notifyDataSetChanged();
-
                             myRecylerView.setAdapter(chatBoxAdapter);
-
+                            myRecylerView.scrollToPosition(chatBoxAdapter.getItemCount() -1);
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
+
+
                     }
                 });
             }
         });
+
         //Chat button - open chat activity
         Button toggleChatButton = findViewById(R.id.toggle_chat);
         toggleChatButton.setOnClickListener(new View.OnClickListener() {
