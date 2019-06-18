@@ -131,6 +131,7 @@ public class LoginActivity extends AppCompatActivity {
                         Toast.makeText(LoginActivity.this, "User not known, please login using credentials", Toast.LENGTH_LONG).show();
                     } else {
                         JSONObject obj = new JSONObject(response);
+                        globalUsername = obj.getString("username");
                         loginUser(obj.getString("username"), obj.getString("password"));
                     }
                 } catch (Exception e) {
@@ -145,7 +146,7 @@ public class LoginActivity extends AppCompatActivity {
         }) {
             protected Map<String, String> getParams() {
                 Map<String, String> MyData = new HashMap<String, String>();
-                MyData.put("UUID", getUUID());
+                MyData.put("uuid", getUUID());
                 return MyData;
             }
         };
@@ -196,6 +197,8 @@ public class LoginActivity extends AppCompatActivity {
 
                         Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        intent.putExtra("UUID", getUUID());
+                        intent.putExtra("username", globalUsername);
                         startActivity(intent);
                     }
                 } catch (Exception e) {
@@ -212,7 +215,7 @@ public class LoginActivity extends AppCompatActivity {
                 Map<String, String> MyData = new HashMap<String, String>();
                 MyData.put("username", name);
                 MyData.put("password", pass);
-                MyData.put("UUID", getUUID());
+                MyData.put("uuid", getUUID());
                 return MyData;
             }
         };

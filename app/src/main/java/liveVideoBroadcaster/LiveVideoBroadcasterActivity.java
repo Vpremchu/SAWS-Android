@@ -66,7 +66,6 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
 
     private static final String RTMP_BASE_URL = "rtmp://141.138.142.48/live/";
 
-    private static final int PERMISSION_READ_STATE = 0;
     private static final String TAG = LiveVideoBroadcasterActivity.class.getSimpleName();
     private ViewGroup mRootView;
     boolean mIsRecording = false;
@@ -124,8 +123,11 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        globalUsername = getIntent().getStringExtra("username");
-        UUID = getIntent().getStringExtra("UUID");
+        Bundle extras = getIntent().getExtras();
+        if (extras != null || !extras.isEmpty()) {
+            globalUsername = extras.getString("username");
+            UUID = extras.getString("UUID");
+        }
 
         // Hide title
         //requestWindowFeature(Window.FEATURE_NO_TITLE);
