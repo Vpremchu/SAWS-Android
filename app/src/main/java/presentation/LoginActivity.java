@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -31,7 +30,6 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.BasicNetwork;
 import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 
 import org.json.JSONObject;
@@ -53,7 +51,7 @@ public class LoginActivity extends AppCompatActivity {
     private static final int PERMISSION_READ_STATE = 0;
     private LoginManager loginManager;
     private OnLoginListener onLoginListener;
-    private String username;
+    private String globalUsername;
     private String password;
     private RequestQueue queue = null;
 
@@ -83,13 +81,13 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                username = usernameEditText.getText().toString().trim();
+                globalUsername = usernameEditText.getText().toString().trim();
                 password = passwordEditText.getText().toString();
 
                 InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 Objects.requireNonNull(inputManager).hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
-                LoginUserWithUUID(username, password);
+                LoginUserWithUUID(globalUsername, password);
             }
         });
 
@@ -169,6 +167,8 @@ public class LoginActivity extends AppCompatActivity {
             public void onSuccess(String token, String username) {
                 Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                intent.putExtra("UUID", getUUID());
+                intent.putExtra("username", globalUsername);
                 startActivity(intent);
                 Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
             }
@@ -191,7 +191,7 @@ public class LoginActivity extends AppCompatActivity {
                         Toast.makeText(LoginActivity.this, "User not known, please check the credentials", Toast.LENGTH_LONG).show();
                     } else {
                         String username = obj.getString("username");
-                        //TODO - save username
+                        globalUsername = username;
                         Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
 
                         Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);

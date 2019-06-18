@@ -1,6 +1,7 @@
 package liveVideoBroadcaster;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
@@ -27,11 +28,21 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.android.volley.Cache;
+import com.android.volley.Network;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.BasicNetwork;
+import com.android.volley.toolbox.DiskBasedCache;
+import com.android.volley.toolbox.HurlStack;
+import com.android.volley.toolbox.StringRequest;
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
@@ -40,6 +51,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -52,10 +66,10 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
 
     private static final String RTMP_BASE_URL = "rtmp://141.138.142.48/live/";
 
+    private static final int PERMISSION_READ_STATE = 0;
     private static final String TAG = LiveVideoBroadcasterActivity.class.getSimpleName();
     private ViewGroup mRootView;
     boolean mIsRecording = false;
-    private EditText mStreamNameEditText;
     private Timer mTimer;
     private long mElapsedTime;
     public TimerHandler mTimerHandler;
@@ -66,11 +80,13 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     private GLSurfaceView mGLView;
     private ILiveVideoBroadcaster mLiveVideoBroadcaster;
     private Button mBroadcastControlButton;
-    private Button toggleChatButton;
 
     private Socket mSocket;
     private TextView chatView;
     private ScrollView scrollView;
+    private RequestQueue requestQueue;
+    private String globalUsername;
+    private String UUID;
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -94,9 +110,22 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     };
 
 
+    public RequestQueue startQueue() {
+        RequestQueue requestQueue;
+        Cache cache = new DiskBasedCache(getCacheDir(), 1024 * 1024);
+        Network network = new BasicNetwork(new HurlStack());
+        requestQueue = new RequestQueue(cache, network);
+        requestQueue.start();
+        return requestQueue;
+    }
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        globalUsername = getIntent().getStringExtra("username");
+        UUID = getIntent().getStringExtra("UUID");
 
         // Hide title
         //requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -108,10 +137,11 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         //this makes service do its job until done
         startService(mLiveVideoBroadcasterServiceIntent);
 
+        this.requestQueue = startQueue();
+
         setContentView(R.layout.activity_live_video_broadcaster);
 
         mTimerHandler = new TimerHandler();
-        mStreamNameEditText = (EditText) findViewById(R.id.stream_name_edit_text);
 
         mRootView = (ViewGroup)findViewById(R.id.root_layout);
         mSettingsButton = (ImageButton)findViewById(R.id.settings_button);
@@ -131,7 +161,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
             //Set up connection parameters
             String url = "https://saws-api.herokuapp.com/chat";
             IO.Options mOptions = new IO.Options();
-            mOptions.query = "stream=" + "Rick"; //TODO - Replace static username
+            mOptions.query = "stream=" + globalUsername;
 
             //Create the socket with these parameters
             mSocket = IO.socket(url, mOptions);
@@ -148,7 +178,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         mSocket.connect();
 
         //Chat button - open chat activity
-        toggleChatButton = findViewById(R.id.toggle_chat);
+        Button toggleChatButton = findViewById(R.id.toggle_chat);
         toggleChatButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -274,12 +304,14 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
 
     }
 
+    @SuppressLint("StaticFieldLeak")
     public void toggleBroadcasting(View v) {
         if (!mIsRecording)
         {
             if (mLiveVideoBroadcaster != null) {
                 if (!mLiveVideoBroadcaster.isConnected()) {
-                    String streamName = mStreamNameEditText.getText().toString();
+
+                    startStreamRequest();
 
                     new AsyncTask<String, String, Boolean>() {
                         ContentLoadingProgressBar
@@ -313,7 +345,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
                                 triggerStopRecording();
                             }
                         }
-                    }.execute(RTMP_BASE_URL + streamName);
+                    }.execute(RTMP_BASE_URL + globalUsername.toLowerCase());
                 }
                 else {
                     Snackbar.make(mRootView, R.string.streaming_not_finished, Snackbar.LENGTH_LONG).show();
@@ -402,6 +434,40 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }
     }
 
+    public void startStreamRequest() {
+        // Create new request
+        String url = "http://saws-api.herokuapp.com/api/stream";
+        StringRequest MyStringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    if (response == null || response.equals("null")) {
+                        Toast.makeText(LiveVideoBroadcasterActivity.this, "values are not correct", Toast.LENGTH_LONG).show();
+                    } else {
+                        JSONObject obj = new JSONObject(response);
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + e, Toast.LENGTH_LONG).show();
+                }
+            }
+        }, new Response.ErrorListener() { //Create an error listener to handle errors appropriately.
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + error, Toast.LENGTH_LONG).show();
+            }
+        }) {
+            protected Map<String, String> getParams() {
+                Map<String, String> MyData = new HashMap<String, String>();
+                MyData.put("live", "True");
+                MyData.put("date", new Date().toString());
+                MyData.put("uuid", UUID);
+                return MyData;
+            }
+        };
+
+        this.requestQueue.add(MyStringRequest);
+    }
+
     public static String getDurationString(int seconds) {
 
         if(seconds < 0 || seconds > 2000000)//there is an codec problem and duration is not set correctly,so display meaningfull string
@@ -430,7 +496,6 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     }
 
 
-
     private Emitter.Listener onNewMessage = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
@@ -448,7 +513,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
                         //Scroll down with the new messages
                         scrollView.fullScroll(ScrollView.FOCUS_DOWN);
                     } catch (JSONException e) {
-                        return;
+                        Toast.makeText(LiveVideoBroadcasterActivity.this, "Error: " + e, Toast.LENGTH_LONG).show();
                     }
 
                     // add the message to view
