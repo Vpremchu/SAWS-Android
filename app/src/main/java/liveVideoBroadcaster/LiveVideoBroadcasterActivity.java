@@ -23,13 +23,17 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ScrollView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,13 +56,16 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import domain.MessageIO;
 import io.antmedia.android.broadcaster.ILiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.LiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.utils.Resolution;
+import logic.ChatBoxAdapter;
 
 
 public class LiveVideoBroadcasterActivity extends AppCompatActivity {
@@ -80,11 +87,16 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     private Button mBroadcastControlButton;
 
     private Socket mSocket;
-    private TextView chatView;
-    private ScrollView scrollView;
+    private LinearLayout chatView;
     private RequestQueue requestQueue;
     private String globalUsername;
     private String UUID;
+
+    public RecyclerView myRecylerView ;
+    public List<MessageIO> messageIOList;
+    public ChatBoxAdapter chatBoxAdapter;
+    public  EditText messagetxt ;
+    public  Button send ;
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -149,6 +161,15 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         mStreamLiveStatus = (TextView) findViewById(R.id.stream_live_status);
 
         mBroadcastControlButton = (Button) findViewById(R.id.toggle_broadcasting);
+        chatView = (LinearLayout) findViewById(R.id.chatView);
+
+        messagetxt = (EditText) findViewById(R.id.message) ;
+        send = (Button)findViewById(R.id.send);
+        messageIOList = new ArrayList<>();
+        myRecylerView = (RecyclerView) findViewById(R.id.messagelist);
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+        myRecylerView.setLayoutManager(mLayoutManager);
+        myRecylerView.setItemAnimator(new DefaultItemAnimator());
 
         // Configure the GLSurfaceView.  This will start the Renderer thread, with an
         // appropriate EGL activity.
@@ -156,7 +177,6 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         if (mGLView != null) {
             mGLView.setEGLContextClientVersion(2);     // select GLES 2.0
         }
-
 
         try {
             //Set up connection parameters
@@ -169,24 +189,86 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         } catch (Exception e) {
             System.out.println(e);
         }
-        //Tell the socket to listen for incoming messages
-        mSocket.on("MESSAGE", onNewMessage);
-        //Link scrollView to the corresponding ScrollView
-        scrollView = findViewById(R.id.scrollView);
-        //Link chatView with the corresponding TextView
-        chatView = findViewById(R.id.chatView);
-        //Connect with the socket and its given parameters
         mSocket.connect();
 
+        send.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!messagetxt.getText().toString().isEmpty()){
+
+                    mSocket.emit("messagedetection", globalUsername, messagetxt.getText().toString());
+
+                    messagetxt.setText(" ");
+                }
+            }
+        });
+
+        mSocket.on("userjoinedthechat", new Emitter.Listener() {
+            @Override
+            public void call(final Object... args) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String data = (String) args[0];
+                        // get the extra data from the fired event and display a toast
+                        Toast.makeText(LiveVideoBroadcasterActivity.this, data, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+
+        mSocket.on("userdisconnect", new Emitter.Listener() {
+            @Override
+            public void call(final Object... args) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String data = (String) args[0];
+
+                        Toast.makeText(LiveVideoBroadcasterActivity.this,data,Toast.LENGTH_SHORT).show();
+
+                    }
+                });
+            }
+        });
+
+        mSocket.on("message", new Emitter.Listener() {
+            @Override
+            public void call(final Object... args) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        JSONObject data = (JSONObject) args[0];
+                        try {
+                            String nickname = data.getString("senderNickname");
+                            String message = data.getString("message");
+
+                            MessageIO m = new MessageIO(nickname, message);
+
+                            messageIOList.add(m);
+
+                            chatBoxAdapter = new ChatBoxAdapter(messageIOList);
+
+                            chatBoxAdapter.notifyDataSetChanged();
+
+                            myRecylerView.setAdapter(chatBoxAdapter);
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        });
         //Chat button - open chat activity
         Button toggleChatButton = findViewById(R.id.toggle_chat);
         toggleChatButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!scrollView.isShown()) {
-                    scrollView.setVisibility(View.VISIBLE);
+                if (!chatView.isShown()) {
+                    chatView.setVisibility(View.VISIBLE);
                 } else {
-                    scrollView.setVisibility(View.GONE);
+                    chatView.setVisibility(View.GONE);
                 }
             }
         });
@@ -528,39 +610,19 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         return String.valueOf(number);
     }
 
-
-    private Emitter.Listener onNewMessage = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    String username;
-                    String message;
-                    try {
-                        username = data.getString("username");
-                        message = data.getString("message");
-                        //Update chatview with incoming messages
-                        chatView.append(username + ": " + message + '\n');
-                        //Scroll down with the new messages
-                        scrollView.fullScroll(ScrollView.FOCUS_DOWN);
-                    } catch (JSONException e) {
-                        Toast.makeText(LiveVideoBroadcasterActivity.this, "Error: " + e, Toast.LENGTH_LONG).show();
-                    }
-
-                    // add the message to view
-                    //addMessage(username, message);
-                }
-            });
+    @Override
+    public void onBackPressed() {
+        if (chatView.isShown()) {
+            chatView.setVisibility(View.GONE);
         }
-    };
+    }
+
 
 
     @Override
-    public void onBackPressed() {
-        if (scrollView.isShown()) {
-            scrollView.setVisibility(View.GONE);
-        }
+    protected void onDestroy() {
+        super.onDestroy();
+
+        mSocket.disconnect();
     }
 }
