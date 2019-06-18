@@ -40,16 +40,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import io.antmedia.android.broadcaster.ILiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.LiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.utils.Resolution;
-import presentation.ChatActivity;
-
-import static java.util.Objects.requireNonNull;
 
 
 public class LiveVideoBroadcasterActivity extends AppCompatActivity {

@@ -29,7 +29,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
-        <activity android:name="presentation.ChatActivity"></activity>
         <activity android:name="presentation.LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -40,9 +39,6 @@
         <activity
             android:name=".LiveVideoBroadcasterActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
-            android:theme="@style/AppThemeDark" />
-        <activity
-            android:name="liveVideoPlayer.LiveVideoPlayerActivity"
             android:theme="@style/AppThemeDark" />
 
         <service android:name="io.antmedia.android.broadcaster.LiveVideoBroadcaster" />
