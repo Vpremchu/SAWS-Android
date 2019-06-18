@@ -51,7 +51,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -269,6 +268,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        stopStreamRequest();
         unbindService(mConnection);
     }
 
@@ -460,8 +460,38 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }) {
             protected Map<String, String> getParams() {
                 Map<String, String> MyData = new HashMap<String, String>();
-                MyData.put("live", "True");
-                MyData.put("date", new Date().toString());
+                MyData.put("uuid", UUID);
+                return MyData;
+            }
+        };
+
+        this.requestQueue.add(MyStringRequest);
+    }
+
+    public void stopStreamRequest() {
+        // Create new request
+        String url = "http://saws-api.herokuapp.com/api/stream";
+        StringRequest MyStringRequest = new StringRequest(Request.Method.PUT, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    if (response == null || response.equals("null")) {
+                        Toast.makeText(LiveVideoBroadcasterActivity.this, "values are not correct", Toast.LENGTH_LONG).show();
+                    } else {
+                        JSONObject obj = new JSONObject(response);
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + e, Toast.LENGTH_LONG).show();
+                }
+            }
+        }, new Response.ErrorListener() { //Create an error listener to handle errors appropriately.
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + error, Toast.LENGTH_LONG).show();
+            }
+        }) {
+            protected Map<String, String> getParams() {
+                Map<String, String> MyData = new HashMap<String, String>();
                 MyData.put("uuid", UUID);
                 return MyData;
             }
