@@ -6,15 +6,6 @@
     tools:context=".LiveVideoBroadcasterActivity"
     android:id="@+id/root_layout">
 
-    <!--
-    <com.google.android.exoplayer.AspectRatioFrameLayout
-        android:id="@+id/cameraPreview_afl"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:layout_centerInParent="true"
-        >
-        -->
     <android.opengl.GLSurfaceView
         android:id="@+id/cameraPreview_surfaceView"
         android:layout_width="match_parent"
@@ -30,34 +21,6 @@
     <!--
    </com.google.android.exoplayer.AspectRatioFrameLayout>
     -->
-
-
-    <ScrollView
-        android:id="@+id/scrollView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:paddingBottom="150dp"
-        android:background="@android:color/white"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-
-        <TextView
-            android:id="@+id/chatView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="80dp"
-            android:layout_marginBottom="80dp"
-            android:text=""
-            android:textColor="@color/black_overlay"
-            android:textSize="30sp"
-            tools:layout_editor_absoluteX="1dp"
-            tools:layout_editor_absoluteY="-3dp" />
-    </ScrollView>
 
 
     <LinearLayout
@@ -144,4 +107,29 @@
 
         </LinearLayout>
     </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:paddingBottom="150dp"
+        android:background="@android:color/white"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+
+        <TextView
+            android:id="@+id/chatView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/black_overlay"
+            android:textSize="30sp"
+            tools:layout_editor_absoluteX="1dp"
+            tools:layout_editor_absoluteY="-3dp" />
+    </ScrollView>
 </android.support.design.widget.CoordinatorLayout>

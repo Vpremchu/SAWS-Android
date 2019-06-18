@@ -555,4 +555,12 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
             });
         }
     };
+
+
+    @Override
+    public void onBackPressed() {
+        if (scrollView.isShown()) {
+            scrollView.setVisibility(View.GONE);
+        }
+    }
 }
