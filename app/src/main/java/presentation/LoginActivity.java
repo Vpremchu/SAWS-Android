@@ -42,14 +42,12 @@ import java.util.UUID;
 import domain.OnLoginListener;
 import liveVideoBroadcaster.LiveVideoBroadcasterActivity;
 import liveVideoBroadcaster.R;
-import logic.LoginManager;
 
 import static android.provider.Settings.Secure.ANDROID_ID;
 
 public class LoginActivity extends AppCompatActivity {
 
     private static final int PERMISSION_READ_STATE = 0;
-    private LoginManager loginManager;
     private OnLoginListener onLoginListener;
     private String globalUsername;
     private String password;
@@ -70,8 +68,6 @@ public class LoginActivity extends AppCompatActivity {
         this.queue = startQueue();
 
         getUserByUUID();
-
-        startLoginListener();
 
         final EditText usernameEditText = findViewById(R.id.username);
         final EditText passwordEditText = findViewById(R.id.password);
@@ -154,31 +150,42 @@ public class LoginActivity extends AppCompatActivity {
         this.queue.add(MyStringRequest);
     }
 
-    public void loginUser(String username, String password) {
-        loginManager
-                .setLoginDetails(username, password)
-                .setOnLoginListener(onLoginListener)
-                .login();
-    }
-
-    public void startLoginListener() {
-        this.loginManager = new LoginManager();
-        this.onLoginListener = new OnLoginListener() {
+    public void loginUser(final String username, final String password) {
+        // Create new request
+        String url = "http://saws-api.herokuapp.com/api/loginhash";
+        StringRequest MyStringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
             @Override
-            public void onSuccess(String token, String username) {
-                Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                intent.putExtra("UUID", getUUID());
-                intent.putExtra("username", globalUsername);
-                startActivity(intent);
-                Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
+            public void onResponse(String response) {
+                try {
+                    if (response == null || response.equals("null")) {
+                        Toast.makeText(LoginActivity.this, "User not known, please login using credentials", Toast.LENGTH_LONG).show();
+                    } else {
+                        Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        intent.putExtra("UUID", getUUID());
+                        intent.putExtra("username", username);
+                        startActivity(intent);
+                        Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(LoginActivity.this, "error: " + e, Toast.LENGTH_LONG).show();
+                }
             }
-
+        }, new Response.ErrorListener() { //Create an error listener to handle errors appropriately.
             @Override
-            public void onFailure(int code, String message) {
-                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(LoginActivity.this, "error: " + error, Toast.LENGTH_LONG).show();
+            }
+        }) {
+            protected Map<String, String> getParams() {
+                Map<String, String> MyData = new HashMap<String, String>();
+                MyData.put("username", username);
+                MyData.put("password", password);
+                return MyData;
             }
         };
+
+        this.queue.add(MyStringRequest);
     }
 
     public void LoginUserWithUUID(final String name, final String pass) {
@@ -197,7 +204,7 @@ public class LoginActivity extends AppCompatActivity {
 
                         Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        intent.putExtra("UUID", getUUID());
+                        intent.putExtra("uuid", getUUID());
                         intent.putExtra("username", globalUsername);
                         startActivity(intent);
                     }
