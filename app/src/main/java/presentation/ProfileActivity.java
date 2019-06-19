@@ -35,6 +35,9 @@ public class ProfileActivity extends AppCompatActivity {
     private String userName;
     private String imageUrl;
     private int satoshiCount;
+    private TextView userNameView;
+    private TextView satoshiCountView;
+    private ImageView imageUrlView;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -44,13 +47,13 @@ public class ProfileActivity extends AppCompatActivity {
         this.queue = startQueue();
         getProfile();
 
-        TextView userName = findViewById(R.id.userName);
-        TextView satoshiCount = findViewById(R.id.satoshiCount);
-        ImageView imageUrl = findViewById(R.id.avatar);
+        userNameView = findViewById(R.id.userName);
+        satoshiCountView = findViewById(R.id.satoshiCount);
+        imageUrlView = findViewById(R.id.avatar);
 
-        userName.setText(profile.getUserName());
-        satoshiCount.setText(profile.getSatoshiCount());
-        new ImageLoader(imageUrl).execute(profile.getImageUrl());
+        userNameView.setText(userName);
+        satoshiCountView.setText(satoshiCount);
+        new ImageLoader(imageUrlView).execute(imageUrl);
 
         Button backButton = findViewById(R.id.backToStream);
         backButton.setOnClickListener(new View.OnClickListener() {
@@ -72,7 +75,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     public void getProfile() {
-        String url = "http://saws-api.herokuapp.com/api/user=username?";
+        String url = "http://saws-api.herokuapp.com/api/user?username=Uncle";
 
         // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
@@ -82,11 +85,12 @@ public class ProfileActivity extends AppCompatActivity {
                 JSONObject obj = null;
                 try {
                     obj = new JSONObject(response);
-                    String userName = obj.getString("firstname") + " " +  obj.getString("lastname");
-                    int satoshiCount = obj.getInt("satoshiAmount");
-                    String imageUrl = obj.getString("iconurl");
+                    System.out.println(obj.toString());
+                    userName = obj.getString("firstname") + " " +  obj.getString("lastname");
+                    satoshiCount = obj.getInt("satoshiAmount");
+                    imageUrl = obj.getString("iconurl");
 
-                    Profile profile = new Profile(userName, imageUrl, satoshiCount);
+                    profile = new Profile(userName, imageUrl, satoshiCount);
 
                     listener.onProfileListener(profile);
                 } catch (JSONException e) {

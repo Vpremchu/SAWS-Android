@@ -62,6 +62,10 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_activity);
 
+        Intent intent = new Intent(getApplicationContext(), ProfileActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+
         //Change the action bar name
         try {
             getSupportActionBar().setTitle("Seechange Login");
