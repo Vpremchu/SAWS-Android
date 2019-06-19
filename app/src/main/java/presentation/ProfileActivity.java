@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.Cache;
 import com.android.volley.Network;
@@ -21,6 +22,9 @@ import com.android.volley.toolbox.StringRequest;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import domain.Profile;
 import domain.ProfileListener;
@@ -39,6 +43,7 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView satoshiCountView;
     private ImageView imageUrlView;
     private String globalUsername;
+    private String UUID;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -48,8 +53,7 @@ public class ProfileActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null || !extras.isEmpty()) {
             globalUsername = extras.getString("username");
-        } else {
-            globalUsername = "";
+            UUID = extras.getString("UUID");
         }
 
         this.queue = startQueue();
@@ -64,7 +68,17 @@ public class ProfileActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
+                intent.putExtra("UUID", UUID);
+                intent.putExtra("username", globalUsername);
                 startActivity(intent);
+            }
+        });
+
+        Button logoutButton = findViewById(R.id.removeAccount);
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                logoutUser();
             }
         });
     }
@@ -86,10 +100,8 @@ public class ProfileActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(String response) {
-                JSONObject obj = null;
                 try {
-                    obj = new JSONObject(response);
-                    System.out.println(obj.toString());
+                    JSONObject obj = new JSONObject(response);
                     userName = obj.getString("firstname") + " " +  obj.getString("lastname");
                     satoshiCount = obj.getInt("satoshiAmount");
                     imageUrl = obj.getString("iconurl");
@@ -117,5 +129,37 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
+    }
+
+    public void logoutUser() {
+        String url = "http://saws-api.herokuapp.com/api/user";
+        StringRequest MyStringRequest = new StringRequest(Request.Method.PUT, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    if (response == null || response.equals("null")) {
+                        Toast.makeText(ProfileActivity.this, "Could not logout!", Toast.LENGTH_LONG).show();
+                    } else {
+                        Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                        startActivity(intent);
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(ProfileActivity.this, "error: " + e, Toast.LENGTH_LONG).show();
+                }
+            }
+        }, new Response.ErrorListener() { //Create an error listener to handle errors appropriately.
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(ProfileActivity.this, "error: " + error, Toast.LENGTH_LONG).show();
+            }
+        }) {
+            protected Map<String, String> getParams() {
+                Map<String, String> MyData = new HashMap<String, String>();
+                MyData.put("uuid", UUID);
+                return MyData;
+            }
+        };
+
+        queue.add(MyStringRequest);
     }
 }

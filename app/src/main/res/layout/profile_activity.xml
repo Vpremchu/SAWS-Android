@@ -28,13 +28,29 @@
         android:id="@+id/satoshiCount"
         />
 
-    <Button
-        android:id="@+id/backToStream"
-        android:layout_width="100dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="500dp"
-        android:layout_centerHorizontal="true"
-        />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/backToStream"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="500dp"
+            android:text="@string/back"
+            />
+
+        <Button
+            android:id="@+id/removeAccount"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="500dp"
+            android:text="@string/logout"
+            />
+    </LinearLayout>
+
+
 
 
 </RelativeLayout>

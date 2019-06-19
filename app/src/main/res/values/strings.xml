@@ -75,4 +75,6 @@
     <string name="your_message">your message</string>
     <string name="send">send</string>
     <string name="profile">Profile</string>
+    <string name="back">Back</string>
+    <string name="logout">Logout</string>
 </resources>
