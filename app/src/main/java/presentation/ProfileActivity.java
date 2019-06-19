@@ -96,11 +96,14 @@ public class ProfileActivity extends AppCompatActivity {
 
                     profile = new Profile(userName, imageUrl, satoshiCount);
 
+                    System.out.println(profile);
+                    System.out.println(userName+satoshiCount+imageUrl);
+
                     userNameView.setText(userName);
-                    satoshiCountView.setText(satoshiCount);
+                    satoshiCountView.setText(Integer.toString(satoshiCount));
                     new ImageLoader(imageUrlView).execute(imageUrl);
 
-                    listener.onProfileListener(profile);
+                    //listener.onProfileListener(profile);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
