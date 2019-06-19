@@ -109,7 +109,7 @@
         android:id="@+id/chatView"
         android:weightSum="3"
         android:orientation="vertical"
-        android:visibility="visible"
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:background="@android:color/white"
         android:textColor="@android:color/black"
