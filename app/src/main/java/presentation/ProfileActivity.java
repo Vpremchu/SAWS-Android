@@ -38,11 +38,19 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView userNameView;
     private TextView satoshiCountView;
     private ImageView imageUrlView;
+    private String globalUsername;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.profile_activity);
+
+        Bundle extras = getIntent().getExtras();
+        if (extras != null || !extras.isEmpty()) {
+            globalUsername = extras.getString("username");
+        } else {
+            globalUsername = "";
+        }
 
         this.queue = startQueue();
         getProfile();
@@ -50,10 +58,6 @@ public class ProfileActivity extends AppCompatActivity {
         userNameView = findViewById(R.id.userName);
         satoshiCountView = findViewById(R.id.satoshiCount);
         imageUrlView = findViewById(R.id.avatar);
-
-        userNameView.setText(userName);
-        satoshiCountView.setText(satoshiCount);
-        new ImageLoader(imageUrlView).execute(imageUrl);
 
         Button backButton = findViewById(R.id.backToStream);
         backButton.setOnClickListener(new View.OnClickListener() {
@@ -75,7 +79,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     public void getProfile() {
-        String url = "http://saws-api.herokuapp.com/api/user?username=Uncle";
+        String url = "http://saws-api.herokuapp.com/api/user?username=" + globalUsername;
 
         // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
@@ -91,6 +95,10 @@ public class ProfileActivity extends AppCompatActivity {
                     imageUrl = obj.getString("iconurl");
 
                     profile = new Profile(userName, imageUrl, satoshiCount);
+
+                    userNameView.setText(userName);
+                    satoshiCountView.setText(satoshiCount);
+                    new ImageLoader(imageUrlView).execute(imageUrl);
 
                     listener.onProfileListener(profile);
                 } catch (JSONException e) {
