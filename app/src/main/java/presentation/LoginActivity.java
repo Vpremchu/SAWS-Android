@@ -14,6 +14,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
+import android.util.Base64;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -74,12 +75,10 @@ public class LoginActivity extends AppCompatActivity {
             System.out.println(e);
         }
 
-        byte[] key = CryptoManager.generateAESKey();
-        byte[] iv = CryptoManager.generateAESIV();
+        byte[] key = Base64.decode("aRC4Q3Hnu9opA4aWCwKaa/TEp+TUouP6jz2S5Lf9HCk=", Base64.DEFAULT);
+        byte[] iv = Base64.decode("qPednS/ceXhduuX0Q5PRuA==", Base64.DEFAULT);
         try {
-            String encodedData = CryptoManager.encryptAES("test", key, iv);
-            System.out.println(encodedData);
-            String decodedData = CryptoManager.decryptAES(encodedData, key, iv);
+            String decodedData = CryptoManager.decryptAES("cc93c000fb2e0c98cdcee62a4c7cee7c", key, iv);
             System.out.println(decodedData);
         } catch (NoSuchPaddingException e) {
             e.printStackTrace();

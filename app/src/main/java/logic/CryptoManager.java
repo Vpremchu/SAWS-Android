@@ -114,7 +114,7 @@ public class CryptoManager {
     }
 
     public static String encryptAES(String payload, byte[] key, byte[] iv) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-        final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+        final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
         SecretKeySpec secretKeySpec = new SecretKeySpec(key, "AES");
         IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
@@ -125,8 +125,8 @@ public class CryptoManager {
     }
 
     public static String decryptAES(String payload, byte[] key, byte[] iv) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-        byte[] decodedPayload = Base64.decode(payload, Base64.DEFAULT);
-        final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+        byte[] decodedPayload = hexStringToByteArray(payload);
+        final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
         SecretKeySpec secretKeySpec = new SecretKeySpec(key, "AES");
         IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
@@ -134,5 +134,15 @@ public class CryptoManager {
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
         byte[] plainText = cipher.doFinal(decodedPayload);
         return new String(plainText);
+    }
+
+    public static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
     }
 }
