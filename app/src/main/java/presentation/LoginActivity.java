@@ -31,6 +31,8 @@ import com.android.volley.toolbox.BasicNetwork;
 import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.security.InvalidAlgorithmParameterException;
@@ -45,9 +47,11 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
+import domain.OnAuthListener;
 import domain.OnLoginListener;
 import liveVideoBroadcaster.LiveVideoBroadcasterActivity;
 import liveVideoBroadcaster.R;
+import logic.AuthManager;
 import logic.CryptoManager;
 import logic.LoginManager;
 
@@ -58,6 +62,7 @@ public class LoginActivity extends AppCompatActivity {
     private static final int PERMISSION_READ_STATE = 0;
     private CryptoManager cryptoManager;
     private LoginManager loginManager;
+    private AuthManager authManager;
     private OnLoginListener onLoginListener;
     private String globalUsername;
     private String password;
@@ -75,28 +80,41 @@ public class LoginActivity extends AppCompatActivity {
             System.out.println(e);
         }
 
-        byte[] key = Base64.decode("aRC4Q3Hnu9opA4aWCwKaa/TEp+TUouP6jz2S5Lf9HCk=", Base64.DEFAULT);
-        byte[] iv = Base64.decode("qPednS/ceXhduuX0Q5PRuA==", Base64.DEFAULT);
+        this.authManager = new AuthManager(getSharedPreferences("localStorage", MODE_PRIVATE));
+        this.authManager.setAuthDetails("Rick", "24e107dae7d9928f2f2dfdab627bb4abdee29bc4b1dc82cf67c0e5b8a0badffe");
+        this.authManager.setOnAuthListener(new OnAuthListener() {
+            @Override
+            public void onSuccess(String certificate, String privateKey, String publicKey) {
+
+            }
+
+            @Override
+            public void onFailure(int code, String message) {
+
+            }
+        });
+
+        //TODO TEST
+        byte[] key = Base64.decode("Fm/JVgmXDvR0yreNG4rFY0p1ft4JqGzsEO70M1+kDyg=", Base64.NO_WRAP);
+        String testKey = "Fm/JVgmXDvR0yreNG4rFY0p1ft4JqGzsEO70M1+kDyg=";
+        System.out.println((Base64.encodeToString(key, Base64.NO_WRAP)).equals(testKey));
+        JSONObject test = new JSONObject();
         try {
-            String decodedData = CryptoManager.decryptAES("cc93c000fb2e0c98cdcee62a4c7cee7c", key, iv);
-            System.out.println(decodedData);
-        } catch (NoSuchPaddingException e) {
+            test.put("test", "aronboi");
+            System.out.println(CryptoManager.createHMAC(test.toString(), key));
+        } catch (JSONException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-        } catch (InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
         } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
             e.printStackTrace();
         }
 
+        this.authManager.authenticate();
+
         this.queue = startQueue();
 
-        getUserByUUID();
+        //getUserByUUID(); TODO uncomment
 
         startLoginListener();
 

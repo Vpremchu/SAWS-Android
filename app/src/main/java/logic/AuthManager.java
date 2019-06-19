@@ -5,6 +5,7 @@ package logic;
 
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.util.Base64;
 
 import org.json.JSONObject;
 
@@ -12,6 +13,8 @@ import java.io.DataOutputStream;
 import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.interfaces.RSAPublicKey;
 
 import domain.AuthResult;
 import domain.LoginResult;
@@ -25,8 +28,16 @@ public class AuthManager {
     private String username = null;
     private String password = null;
 
-    AuthManager(SharedPreferences sharedPreferences) {
+    public AuthManager(SharedPreferences sharedPreferences) {
         this.sharedPreferences = sharedPreferences;
+    }
+
+    public boolean hasLocalCertificate() {
+        if (sharedPreferences.contains("certificate")) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public AuthManager setAuthDetails(String username, String password) {
@@ -73,21 +84,42 @@ public class AuthManager {
             DataOutputStream output = null;
 
             try {
-                URL url = new URL("https://saws-api.herokuapp.com/api/auth");
+                URL url = new URL("http://saws-api.herokuapp.com/api/auth");
                 connection = (HttpURLConnection) url.openConnection();
-                connection.setConnectTimeout(2000);
+                connection.setConnectTimeout(10000);
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-type", "application/json");
                 connection.setRequestProperty("Accept", "application/json");
                 connection.setDoInput(true);
                 connection.setDoOutput(true);
 
-                JSONObject json = new JSONObject();
-                json.put("username", username);
-                json.put("password", password);
+                byte[] key = CryptoManager.generateAESKey();
+                byte[] iv = CryptoManager.generateAESIV();
+                String UUID = "UUID"; //TODO remove - serverside
+
+                JSONObject body = new JSONObject();
+                JSONObject payload = new JSONObject();
+                RSAPublicKey publicKey = CryptoManager.getPublicKeyFromString(CryptoManager.PUBLIC_KEY_PEM);
+                payload.put("username", CryptoManager.encrypt(username, publicKey));
+                payload.put("password", CryptoManager.encrypt(password, publicKey));
+                payload.put("uuid", CryptoManager.encrypt(UUID, publicKey));
+                payload.put("key", CryptoManager.encrypt(key, publicKey));
+                payload.put("iv", CryptoManager.encrypt(iv, publicKey));
+                body.put("payload", payload);
+
+                System.out.println(Base64.encodeToString(key, Base64.NO_WRAP));  //TODO REMOVE
+
+                System.out.println(payload.toString()); //TODO REMOVE
+                String correctedPayload = payload.toString().replace("\\", "");
+                System.out.println("CORRECTED PAYLOAD " + correctedPayload);
+
+                String signature = CryptoManager.createHMAC(correctedPayload.trim(), key);
+                body.put("signature", signature);
+
+                System.out.println(signature); //TODO REMOVE
 
                 output = new DataOutputStream(connection.getOutputStream());
-                output.writeBytes(json.toString());
+                output.writeBytes(body.toString());
                 output.flush();
 
                 result = new AuthResult(connection.getResponseCode());
@@ -99,7 +131,6 @@ public class AuthManager {
                     String encryptedCertificate = jsonPayload.getString("certificate");
                     String encryptedPrivateKey = jsonPayload.getString("privateKey");
                     String encryptedPublicKey = jsonPayload.getString("publicKey");
-                    String token = jsonObject.getString("token");
                     //result.setToken(token).setUsername(username);
                     connection.getInputStream().close();
                 } else {
@@ -107,6 +138,7 @@ public class AuthManager {
 
                     JSONObject jsonObject = new JSONObject(response);
                     String message = jsonObject.getString("message");
+                    System.out.println(message); // TODO Remove
                     result.setMessage(message);
                     connection.getErrorStream().close();
                 }
@@ -129,9 +161,10 @@ public class AuthManager {
 
         @Override
         protected void onPostExecute(AuthResult authResult) {
-            if(this.manager.get() != null){
+            if (this.manager.get() != null) {
                 if (authResult != null) {
-                    if(authResult.getCode() == 200){
+                    if (authResult.getCode() == 200) {
+                        System.out.println("noice");
                         this.manager.get().onAuthListener.onSuccess(authResult.getCertificate(), authResult.getPrivateKey(), authResult.getPublicKey());
                     } else {
                         this.manager.get().onAuthListener.onFailure(authResult.getCode(), authResult.getMessage());

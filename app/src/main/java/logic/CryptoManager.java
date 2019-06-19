@@ -27,6 +27,7 @@ import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
@@ -36,7 +37,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class CryptoManager {
 
     // PUBLIC KEY - PEM FORMAT  --------------------------------------------------------------------
-    String publicKeyPem = "-----BEGIN PUBLIC KEY-----\n" +
+    public static String PUBLIC_KEY_PEM = "-----BEGIN PUBLIC KEY-----\n" +
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyBzuf2lk86pre7i/ruJx" +
             "LGIuR1Qr3sfNiMAGEzoxg4ZJucJNxJ6aQbKjxTWtI2eIn/2fBVuSnWB0aNDn2/R/" +
             "ZmCTfMT1iHC4bRMQDgdVgpqycu8kPjzXwTUywLLSNB7vmwaGQmM9jdsNo3hWpuDr" +
@@ -51,7 +52,7 @@ public class CryptoManager {
         String privateKeyPEM = key;
         privateKeyPEM = privateKeyPEM.replace("-----BEGIN PRIVATE KEY-----\n", "");
         privateKeyPEM = privateKeyPEM.replace("-----END PRIVATE KEY-----", "");
-        byte[] encoded = Base64.decode(privateKeyPEM, Base64.DEFAULT);
+        byte[] encoded = Base64.decode(privateKeyPEM, Base64.NO_WRAP);
         KeyFactory kf = KeyFactory.getInstance("RSA");
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
         RSAPrivateKey privKey = (RSAPrivateKey) kf.generatePrivate(keySpec);
@@ -64,7 +65,7 @@ public class CryptoManager {
         String publicKeyPEM = key;
         publicKeyPEM = publicKeyPEM.replace("-----BEGIN PUBLIC KEY-----\n", "");
         publicKeyPEM = publicKeyPEM.replace("-----END PUBLIC KEY-----", "");
-        byte[] encoded = Base64.decode(publicKeyPEM, Base64.DEFAULT);
+        byte[] encoded = Base64.decode(publicKeyPEM, Base64.NO_WRAP);
         KeyFactory kf = KeyFactory.getInstance("RSA");
         RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(encoded));
         return pubKey;
@@ -75,7 +76,7 @@ public class CryptoManager {
         Signature sign = Signature.getInstance("SHA256withRSA");
         sign.initSign(privateKey);
         sign.update(message.getBytes(StandardCharsets.UTF_8));
-        return new String(Base64.encode(sign.sign(), Base64.DEFAULT), StandardCharsets.UTF_8);
+        return new String(Base64.encode(sign.sign(), Base64.NO_WRAP), StandardCharsets.UTF_8);
     }
 
     //VERIFY SIGNATURE WITH PUBLIC KEY
@@ -83,21 +84,27 @@ public class CryptoManager {
         Signature sign = Signature.getInstance("SHA256withRSA");
         sign.initVerify(publicKey);
         sign.update(message.getBytes(StandardCharsets.UTF_8));
-        return sign.verify(Base64.decode(signature.getBytes(StandardCharsets.UTF_8), Base64.DEFAULT));
+        return sign.verify(Base64.decode(signature.getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP));
     }
 
     //ENCRYPT USING PUBLIC KEY
     public static String encrypt(String rawText, PublicKey publicKey) throws IOException, GeneralSecurityException {
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        return Base64.encodeToString(cipher.doFinal(rawText.getBytes(StandardCharsets.UTF_8)), Base64.DEFAULT);
+        return Base64.encodeToString(cipher.doFinal(rawText.getBytes(StandardCharsets.UTF_8)), Base64.NO_WRAP);
+    }
+
+    public static String encrypt(byte[] rawText, PublicKey publicKey) throws IOException, GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        return Base64.encodeToString(cipher.doFinal(rawText), Base64.NO_WRAP);
     }
 
     //DECRYPT USING PRIVATE KEY
     public static String decrypt(String cipherText, PrivateKey privateKey) throws IOException, GeneralSecurityException {
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        return cipher.doFinal(Base64.decode(cipherText, Base64.DEFAULT)).toString();
+        return cipher.doFinal(Base64.decode(cipherText, Base64.NO_WRAP)).toString();
     }
 
     public static byte[] generateAESKey() {
@@ -121,7 +128,7 @@ public class CryptoManager {
 
         cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
         byte[] cipherText = cipher.doFinal(payload.getBytes());
-        return Base64.encodeToString(cipherText, Base64.DEFAULT);
+        return Base64.encodeToString(cipherText, Base64.NO_WRAP);
     }
 
     public static String decryptAES(String payload, byte[] key, byte[] iv) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
@@ -141,8 +148,26 @@ public class CryptoManager {
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i+1), 16));
+                    + Character.digit(s.charAt(i + 1), 16));
         }
         return data;
+    }
+
+    public static String bytesToHex(byte[] bytes) {
+        final char[] hexArray = "0123456789ABCDEF".toCharArray();
+        char[] hexChars = new char[bytes.length * 2];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
+
+    public static String createHMAC(String payload, byte[] key) throws NoSuchAlgorithmException, InvalidKeyException {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(Base64.encodeToString(key, Base64.NO_WRAP).getBytes(), "HmacSHA256"));
+        byte[] result = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+        return bytesToHex(result).toLowerCase();
     }
 }
