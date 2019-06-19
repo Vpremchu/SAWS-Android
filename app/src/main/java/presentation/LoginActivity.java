@@ -20,7 +20,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-
 import com.android.volley.Cache;
 import com.android.volley.Network;
 import com.android.volley.Request;
@@ -31,17 +30,24 @@ import com.android.volley.toolbox.BasicNetwork;
 import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.StringRequest;
-
 import org.json.JSONObject;
 
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
 import domain.OnLoginListener;
 import liveVideoBroadcaster.LiveVideoBroadcasterActivity;
 import liveVideoBroadcaster.R;
+import logic.CryptoManager;
 import logic.LoginManager;
 
 import static android.provider.Settings.Secure.ANDROID_ID;
@@ -49,6 +55,7 @@ import static android.provider.Settings.Secure.ANDROID_ID;
 public class LoginActivity extends AppCompatActivity {
 
     private static final int PERMISSION_READ_STATE = 0;
+    private CryptoManager cryptoManager;
     private LoginManager loginManager;
     private OnLoginListener onLoginListener;
     private String globalUsername;
@@ -65,6 +72,27 @@ public class LoginActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("Seechange Login");
         } catch (Exception e) {
             System.out.println(e);
+        }
+
+        byte[] key = CryptoManager.generateAESKey();
+        byte[] iv = CryptoManager.generateAESIV();
+        try {
+            String encodedData = CryptoManager.encryptAES("test", key, iv);
+            System.out.println(encodedData);
+            String decodedData = CryptoManager.decryptAES(encodedData, key, iv);
+            System.out.println(decodedData);
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
         }
 
         this.queue = startQueue();
