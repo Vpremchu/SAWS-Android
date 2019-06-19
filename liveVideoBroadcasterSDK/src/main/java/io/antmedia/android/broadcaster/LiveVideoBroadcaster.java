@@ -804,4 +804,5 @@ public class LiveVideoBroadcaster extends Service implements ILiveVideoBroadcast
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
+
 }

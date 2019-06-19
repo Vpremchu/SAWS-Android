@@ -1,6 +1,7 @@
 package liveVideoBroadcaster;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
@@ -8,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
@@ -22,6 +24,9 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,15 +34,41 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.android.volley.Cache;
+import com.android.volley.Network;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.BasicNetwork;
+import com.android.volley.toolbox.DiskBasedCache;
+import com.android.volley.toolbox.HurlStack;
+import com.android.volley.toolbox.StringRequest;
+import com.github.nkzawa.emitter.Emitter;
+import com.github.nkzawa.socketio.client.IO;
+import com.github.nkzawa.socketio.client.Socket;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import domain.MessageIO;
 import io.antmedia.android.broadcaster.ILiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.LiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.utils.Resolution;
+import logic.ChatBoxAdapter;
+import presentation.ProfileActivity;
 
 
 public class LiveVideoBroadcasterActivity extends AppCompatActivity {
@@ -47,7 +78,6 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     private static final String TAG = LiveVideoBroadcasterActivity.class.getSimpleName();
     private ViewGroup mRootView;
     boolean mIsRecording = false;
-    private EditText mStreamNameEditText;
     private Timer mTimer;
     private long mElapsedTime;
     public TimerHandler mTimerHandler;
@@ -58,6 +88,21 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     private GLSurfaceView mGLView;
     private ILiveVideoBroadcaster mLiveVideoBroadcaster;
     private Button mBroadcastControlButton;
+
+    private Socket mSocket;
+    private LinearLayout chatView;
+    private RequestQueue requestQueue;
+    private String globalUsername;
+    private String UUID;
+
+    public RecyclerView myRecylerView ;
+    public List<MessageIO> MessageIOList;
+    public ChatBoxAdapter chatBoxAdapter;
+    public  EditText messagetxt;
+    public  Button send;
+
+
+    private Map<String, Integer> userColors = new HashMap<>();
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -81,9 +126,25 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     };
 
 
+    public RequestQueue startQueue() {
+        RequestQueue requestQueue;
+        Cache cache = new DiskBasedCache(getCacheDir(), 1024 * 1024);
+        Network network = new BasicNetwork(new HurlStack());
+        requestQueue = new RequestQueue(cache, network);
+        requestQueue.start();
+        return requestQueue;
+    }
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Bundle extras = getIntent().getExtras();
+        if (extras != null || !extras.isEmpty()) {
+            globalUsername = extras.getString("username");
+            UUID = extras.getString("UUID");
+        }
 
         // Hide title
         //requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -95,23 +156,127 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         //this makes service do its job until done
         startService(mLiveVideoBroadcasterServiceIntent);
 
+        this.requestQueue = startQueue();
+
         setContentView(R.layout.activity_live_video_broadcaster);
 
         mTimerHandler = new TimerHandler();
-        mStreamNameEditText = (EditText) findViewById(R.id.stream_name_edit_text);
 
-        mRootView = (ViewGroup)findViewById(R.id.root_layout);
-        mSettingsButton = (ImageButton)findViewById(R.id.settings_button);
-        mStreamLiveStatus = (TextView) findViewById(R.id.stream_live_status);
+        mRootView =findViewById(R.id.root_layout);
+        mSettingsButton = findViewById(R.id.settings_button);
+        mStreamLiveStatus = findViewById(R.id.stream_live_status);
 
-        mBroadcastControlButton = (Button) findViewById(R.id.toggle_broadcasting);
+        mBroadcastControlButton = findViewById(R.id.toggle_broadcasting);
+
+        chatView = findViewById(R.id.chatView);
 
         // Configure the GLSurfaceView.  This will start the Renderer thread, with an
         // appropriate EGL activity.
-        mGLView = (GLSurfaceView) findViewById(R.id.cameraPreview_surfaceView);
+        mGLView = findViewById(R.id.cameraPreview_surfaceView);
         if (mGLView != null) {
             mGLView.setEGLContextClientVersion(2);     // select GLES 2.0
         }
+
+
+        messagetxt =  findViewById(R.id.message) ;
+        send = findViewById(R.id.send);
+
+        try {
+            //Set up connection parameters
+            String url = "https://saws-api.herokuapp.com/chat";
+            IO.Options mOptions = new IO.Options();
+            mOptions.query = "stream=" + globalUsername;
+
+            //Create the socket with these parameters
+            mSocket = IO.socket(url, mOptions);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        mSocket.connect();
+
+        MessageIOList = new ArrayList<>();
+        myRecylerView = findViewById(R.id.messagelist);
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+        myRecylerView.setLayoutManager(mLayoutManager);
+        myRecylerView.setItemAnimator(new DefaultItemAnimator());
+
+
+
+        send.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!messagetxt.getText().toString().isEmpty()){
+                    try {
+                        JSONObject chatMessage = new JSONObject();
+                        chatMessage.put("username", globalUsername);
+                        chatMessage.put("message", messagetxt.getText().toString());
+
+                        mSocket.emit("new-message", chatMessage);
+
+                        messagetxt.setText(" ");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        mSocket.on("MESSAGE", new Emitter.Listener() {
+            @Override
+            public void call(final Object... args) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        JSONObject data = (JSONObject) args[0];
+                        try {
+                            String username = data.getString("username");
+                            String message = data.getString("message");
+
+                            if(!userColors.containsKey(username)) {
+                                Random rnd = new Random();
+                                int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+
+                                userColors.put(username, color);
+                            }
+
+                            MessageIO m = new MessageIO(username, message, userColors.get(username));
+                            MessageIOList.add(m);
+                            chatBoxAdapter = new ChatBoxAdapter(MessageIOList);
+                            chatBoxAdapter.notifyDataSetChanged();
+                            myRecylerView.setAdapter(chatBoxAdapter);
+                            myRecylerView.scrollToPosition(chatBoxAdapter.getItemCount() -1);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+
+                    }
+                });
+            }
+        });
+
+        //Chat button - open chat activity
+        Button toggleChatButton = findViewById(R.id.toggle_chat);
+        toggleChatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!chatView.isShown()) {
+                    chatView.setVisibility(View.VISIBLE);
+                } else {
+                    chatView.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        Button toggleProfileButton = findViewById(R.id.toggle_profile);
+        toggleProfileButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), ProfileActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            }
+        });
     }
 
     public void changeCamera(View v) {
@@ -227,12 +392,14 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
 
     }
 
+    @SuppressLint("StaticFieldLeak")
     public void toggleBroadcasting(View v) {
         if (!mIsRecording)
         {
             if (mLiveVideoBroadcaster != null) {
                 if (!mLiveVideoBroadcaster.isConnected()) {
-                    String streamName = mStreamNameEditText.getText().toString();
+
+                    startStreamRequest();
 
                     new AsyncTask<String, String, Boolean>() {
                         ContentLoadingProgressBar
@@ -263,10 +430,11 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
                             else {
                                 Snackbar.make(mRootView, R.string.stream_not_started, Snackbar.LENGTH_LONG).show();
 
+                                stopStreamRequest();
                                 triggerStopRecording();
                             }
                         }
-                    }.execute(RTMP_BASE_URL + streamName);
+                    }.execute(RTMP_BASE_URL + globalUsername.toLowerCase());
                 }
                 else {
                     Snackbar.make(mRootView, R.string.streaming_not_finished, Snackbar.LENGTH_LONG).show();
@@ -278,6 +446,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }
         else
         {
+            stopStreamRequest();
             triggerStopRecording();
         }
 
@@ -355,6 +524,70 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }
     }
 
+    public void startStreamRequest() {
+        // Create new request
+        String url = "http://saws-api.herokuapp.com/api/stream";
+        StringRequest MyStringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    if (response == null || response.equals("null")) {
+                        Toast.makeText(LiveVideoBroadcasterActivity.this, "values are not correct", Toast.LENGTH_LONG).show();
+                    } else {
+                        JSONObject obj = new JSONObject(response);
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + e, Toast.LENGTH_LONG).show();
+                }
+            }
+        }, new Response.ErrorListener() { //Create an error listener to handle errors appropriately.
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + error, Toast.LENGTH_LONG).show();
+            }
+        }) {
+            protected Map<String, String> getParams() {
+                Map<String, String> MyData = new HashMap<String, String>();
+                MyData.put("uuid", UUID);
+                return MyData;
+            }
+        };
+
+        this.requestQueue.add(MyStringRequest);
+    }
+
+    public void stopStreamRequest() {
+        // Create new request
+        String url = "http://saws-api.herokuapp.com/api/stream";
+        StringRequest MyStringRequest = new StringRequest(Request.Method.PUT, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    if (response == null || response.equals("null")) {
+                        Toast.makeText(LiveVideoBroadcasterActivity.this, "values are not correct", Toast.LENGTH_LONG).show();
+                    } else {
+                        JSONObject obj = new JSONObject(response);
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + e, Toast.LENGTH_LONG).show();
+                }
+            }
+        }, new Response.ErrorListener() { //Create an error listener to handle errors appropriately.
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(LiveVideoBroadcasterActivity.this, "error: " + error, Toast.LENGTH_LONG).show();
+            }
+        }) {
+            protected Map<String, String> getParams() {
+                Map<String, String> MyData = new HashMap<String, String>();
+                MyData.put("uuid", UUID);
+                return MyData;
+            }
+        };
+
+        this.requestQueue.add(MyStringRequest);
+    }
+
     public static String getDurationString(int seconds) {
 
         if(seconds < 0 || seconds > 2000000)//there is an codec problem and duration is not set correctly,so display meaningfull string
@@ -380,5 +613,21 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }
 
         return String.valueOf(number);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (chatView.isShown()) {
+            chatView.setVisibility(View.GONE);
+        }
+    }
+
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        mSocket.disconnect();
     }
 }

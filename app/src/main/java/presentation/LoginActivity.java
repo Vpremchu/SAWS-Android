@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -31,7 +30,6 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.BasicNetwork;
 import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 
 import org.json.JSONObject;
@@ -53,7 +51,7 @@ public class LoginActivity extends AppCompatActivity {
     private static final int PERMISSION_READ_STATE = 0;
     private LoginManager loginManager;
     private OnLoginListener onLoginListener;
-    private String username;
+    private String globalUsername;
     private String password;
     private RequestQueue queue = null;
 
@@ -61,10 +59,6 @@ public class LoginActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_activity);
-
-        Intent intent = new Intent(getApplicationContext(), ProfileActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
 
         //Change the action bar name
         try {
@@ -87,13 +81,13 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                username = usernameEditText.getText().toString().trim();
+                globalUsername = usernameEditText.getText().toString().trim();
                 password = passwordEditText.getText().toString();
 
-                InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 Objects.requireNonNull(inputManager).hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
-                LoginUserWithUUID(username, password);
+                LoginUserWithUUID(globalUsername, password);
             }
         });
 
@@ -122,7 +116,7 @@ public class LoginActivity extends AppCompatActivity {
         tmSerial = "" + tm.getSimSerialNumber();
         androidId = "" + android.provider.Settings.Secure.getString(getContentResolver(), ANDROID_ID);
 
-        UUID deviceUuid = new UUID(androidId.hashCode(), ((long)tmDevice.hashCode() << 32) | tmSerial.hashCode());
+        UUID deviceUuid = new UUID(androidId.hashCode(), ((long) tmDevice.hashCode() << 32) | tmSerial.hashCode());
         return deviceUuid.toString();
     }
 
@@ -137,6 +131,7 @@ public class LoginActivity extends AppCompatActivity {
                         Toast.makeText(LoginActivity.this, "User not known, please login using credentials", Toast.LENGTH_LONG).show();
                     } else {
                         JSONObject obj = new JSONObject(response);
+                        globalUsername = obj.getString("username");
                         loginUser(obj.getString("username"), obj.getString("password"));
                     }
                 } catch (Exception e) {
@@ -151,7 +146,7 @@ public class LoginActivity extends AppCompatActivity {
         }) {
             protected Map<String, String> getParams() {
                 Map<String, String> MyData = new HashMap<String, String>();
-                MyData.put("UUID", getUUID());
+                MyData.put("uuid", getUUID());
                 return MyData;
             }
         };
@@ -173,6 +168,8 @@ public class LoginActivity extends AppCompatActivity {
             public void onSuccess(String token, String username) {
                 Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                intent.putExtra("UUID", getUUID());
+                intent.putExtra("username", globalUsername);
                 startActivity(intent);
                 Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
             }
@@ -190,15 +187,18 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(String response) {
                 try {
+                    JSONObject obj = new JSONObject(response);
                     if (response == null || response.equals("null")) {
                         Toast.makeText(LoginActivity.this, "User not known, please check the credentials", Toast.LENGTH_LONG).show();
                     } else {
-                        JSONObject obj = new JSONObject(response);
                         String username = obj.getString("username");
+                        globalUsername = username;
                         Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
 
                         Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        intent.putExtra("UUID", getUUID());
+                        intent.putExtra("username", globalUsername);
                         startActivity(intent);
                     }
                 } catch (Exception e) {
@@ -215,7 +215,7 @@ public class LoginActivity extends AppCompatActivity {
                 Map<String, String> MyData = new HashMap<String, String>();
                 MyData.put("username", name);
                 MyData.put("password", pass);
-                MyData.put("UUID", getUUID());
+                MyData.put("uuid", getUUID());
                 return MyData;
             }
         };
