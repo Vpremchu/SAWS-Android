@@ -1,5 +1,7 @@
 package presentation;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -55,6 +57,8 @@ public class ProfileActivity extends AppCompatActivity {
             globalUsername = extras.getString("username");
             UUID = extras.getString("UUID");
         }
+
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
 
         this.queue = startQueue();
         getProfile();
@@ -161,5 +165,13 @@ public class ProfileActivity extends AppCompatActivity {
         };
 
         queue.add(MyStringRequest);
+    }
+
+    @Override
+    public void onBackPressed() {
+        Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
+        intent.putExtra("UUID", UUID);
+        intent.putExtra("username", globalUsername);
+        startActivity(intent);
     }
 }

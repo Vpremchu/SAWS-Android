@@ -28,6 +28,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -94,8 +95,9 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     private RequestQueue requestQueue;
     private String globalUsername;
     private String UUID;
+    private Button toggleProfileButton;
 
-    public RecyclerView myRecylerView ;
+    public RecyclerView myRecyclerView;
     public List<MessageIO> MessageIOList;
     public ChatBoxAdapter chatBoxAdapter;
     public  EditText messagetxt;
@@ -147,7 +149,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         }
 
         // Hide title
-        //requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -195,10 +197,10 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         mSocket.connect();
 
         MessageIOList = new ArrayList<>();
-        myRecylerView = findViewById(R.id.messagelist);
+        myRecyclerView = findViewById(R.id.messagelist);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
-        myRecylerView.setLayoutManager(mLayoutManager);
-        myRecylerView.setItemAnimator(new DefaultItemAnimator());
+        myRecyclerView.setLayoutManager(mLayoutManager);
+        myRecyclerView.setItemAnimator(new DefaultItemAnimator());
 
 
 
@@ -243,8 +245,8 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
                             MessageIOList.add(m);
                             chatBoxAdapter = new ChatBoxAdapter(MessageIOList);
                             chatBoxAdapter.notifyDataSetChanged();
-                            myRecylerView.setAdapter(chatBoxAdapter);
-                            myRecylerView.scrollToPosition(chatBoxAdapter.getItemCount() -1);
+                            myRecyclerView.setAdapter(chatBoxAdapter);
+                            myRecyclerView.scrollToPosition(chatBoxAdapter.getItemCount() -1);
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -268,15 +270,23 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
             }
         });
 
-        Button toggleProfileButton = findViewById(R.id.toggle_profile);
+        toggleProfileButton = findViewById(R.id.toggle_profile);
         toggleProfileButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(), ProfileActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                intent.putExtra("username", globalUsername);
-                intent.putExtra("UUID", UUID);
-                startActivity(intent);
+                new AlertDialog.Builder(LiveVideoBroadcasterActivity.this)
+                        .setTitle("Move to profile")
+                        .setMessage("Do you really want to go to profile?")
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                Intent intent = new Intent(getApplicationContext(), ProfileActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                intent.putExtra("username", globalUsername);
+                                intent.putExtra("UUID", UUID);
+                                startActivity(intent);
+                            }})
+                        .setNegativeButton("No", null).show();
             }
         });
     }
@@ -350,6 +360,8 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         if (mCameraResolutionsDialog != null && mCameraResolutionsDialog.isVisible()) {
             mCameraResolutionsDialog.dismiss();
         }
+        stopStreamRequest();
+        triggerStopRecording();
         mLiveVideoBroadcaster.pause();
     }
 
@@ -427,6 +439,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
 
                                 mBroadcastControlButton.setText(R.string.stop_broadcasting);
                                 mSettingsButton.setVisibility(View.GONE);
+                                toggleProfileButton.setVisibility(View.GONE);
                                 startTimer();//start the recording duration
                             }
                             else {
@@ -434,6 +447,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
 
                                 stopStreamRequest();
                                 triggerStopRecording();
+                                toggleProfileButton.setVisibility(View.VISIBLE);
                             }
                         }
                     }.execute(RTMP_BASE_URL + globalUsername.toLowerCase());
@@ -450,6 +464,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         {
             stopStreamRequest();
             triggerStopRecording();
+            toggleProfileButton.setVisibility(View.VISIBLE);
         }
 
     }
@@ -621,10 +636,22 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     public void onBackPressed() {
         if (chatView.isShown()) {
             chatView.setVisibility(View.GONE);
+        } else {
+            new AlertDialog.Builder(this)
+                    .setTitle("Close app")
+                    .setMessage("Do you really want to close the app and stream?")
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            triggerStopRecording();
+                            stopStreamRequest();
+                            System.exit(0);
+                            finish();
+
+                        }})
+                    .setNegativeButton("No", null).show();
         }
     }
-
-
 
     @Override
     protected void onDestroy() {
