@@ -111,8 +111,8 @@ public class ProfileActivity extends AppCompatActivity {
                     System.out.println(profile);
                     System.out.println(userName+satoshiCount+imageUrl);
 
-                    userNameView.setText(userName);
-                    satoshiCountView.setText(Integer.toString(satoshiCount));
+                    userNameView.setText("Name: \n" + userName);
+                    satoshiCountView.setText("Satochi Amount: \n" + Integer.toString(satoshiCount));
                     new ImageLoader(imageUrlView).execute(imageUrl);
 
                     //listener.onProfileListener(profile);
