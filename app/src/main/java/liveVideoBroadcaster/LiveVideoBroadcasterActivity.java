@@ -5,9 +5,11 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.hardware.Camera;
@@ -22,13 +24,14 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -63,6 +66,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 
 import domain.MessageIO;
 import io.antmedia.android.broadcaster.ILiveVideoBroadcaster;
@@ -70,6 +74,8 @@ import io.antmedia.android.broadcaster.LiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.utils.Resolution;
 import logic.ChatBoxAdapter;
 import presentation.ProfileActivity;
+
+import static android.provider.Settings.Secure.ANDROID_ID;
 
 
 public class LiveVideoBroadcasterActivity extends AppCompatActivity {
@@ -102,6 +108,7 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
     public ChatBoxAdapter chatBoxAdapter;
     public  EditText messagetxt;
     public  Button send;
+    private static final int PERMISSION_READ_STATE = 0;
 
 
     private Map<String, Integer> userColors = new HashMap<>();
@@ -143,10 +150,11 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         Bundle extras = getIntent().getExtras();
-        if (extras != null || !extras.isEmpty()) {
+        if (extras != null && !extras.isEmpty()) {
             globalUsername = extras.getString("username");
-            UUID = extras.getString("UUID");
         }
+
+        UUID = getUUID();
 
         // Hide title
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
@@ -658,5 +666,23 @@ public class LiveVideoBroadcasterActivity extends AppCompatActivity {
         super.onDestroy();
 
         mSocket.disconnect();
+    }
+
+    @SuppressLint("HardwareIds")
+    public String getUUID() {
+        final TelephonyManager tm = (TelephonyManager) getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
+
+        final String tmDevice, tmSerial, androidId;
+
+        if (ContextCompat.checkSelfPermission(LiveVideoBroadcasterActivity.this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(LiveVideoBroadcasterActivity.this, new String[]{Manifest.permission.READ_PHONE_STATE}, PERMISSION_READ_STATE);
+
+        tmDevice = "" + tm.getDeviceId();
+        tmSerial = "" + tm.getSimSerialNumber();
+        androidId = "" + android.provider.Settings.Secure.getString(getContentResolver(), ANDROID_ID);
+
+        java.util.UUID deviceUuid = new UUID(androidId.hashCode(), ((long) tmDevice.hashCode() << 32) | tmSerial.hashCode());
+        return deviceUuid.toString();
     }
 }

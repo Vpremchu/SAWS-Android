@@ -51,6 +51,7 @@ public class LoginActivity extends AppCompatActivity {
     private OnLoginListener onLoginListener;
     private String globalUsername;
     private String password;
+    private String UUID;
     private RequestQueue queue = null;
 
     @Override
@@ -64,6 +65,13 @@ public class LoginActivity extends AppCompatActivity {
         } catch (Exception e) {
             System.out.println(e);
         }
+
+        Bundle extras = getIntent().getExtras();
+        if (extras != null && !extras.isEmpty()) {
+            UUID = extras.getString("UUID");
+        }
+
+        UUID = getUUID();
 
         this.queue = startQueue();
 
@@ -142,7 +150,7 @@ public class LoginActivity extends AppCompatActivity {
         }) {
             protected Map<String, String> getParams() {
                 Map<String, String> MyData = new HashMap<String, String>();
-                MyData.put("uuid", getUUID());
+                MyData.put("uuid", UUID);
                 return MyData;
             }
         };
@@ -162,7 +170,7 @@ public class LoginActivity extends AppCompatActivity {
                     } else {
                         Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        intent.putExtra("UUID", getUUID());
+                        intent.putExtra("UUID", UUID);
                         intent.putExtra("username", username);
                         startActivity(intent);
                         Toast.makeText(getApplicationContext(), "Welkom, " + username, Toast.LENGTH_SHORT).show();
@@ -204,7 +212,7 @@ public class LoginActivity extends AppCompatActivity {
 
                         Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        intent.putExtra("uuid", getUUID());
+                        intent.putExtra("uuid", UUID);
                         intent.putExtra("username", globalUsername);
                         startActivity(intent);
                     }
@@ -222,7 +230,7 @@ public class LoginActivity extends AppCompatActivity {
                 Map<String, String> MyData = new HashMap<String, String>();
                 MyData.put("username", name);
                 MyData.put("password", pass);
-                MyData.put("uuid", getUUID());
+                MyData.put("uuid", UUID);
                 return MyData;
             }
         };
@@ -234,6 +242,8 @@ public class LoginActivity extends AppCompatActivity {
         if (requestCode == PERMISSION_READ_STATE)
             if (grantResults.length <= 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(LoginActivity.this, "Permission denied to read your Phone state", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(LoginActivity.this, "Permission given!", Toast.LENGTH_LONG).show();
             }
     }
 }

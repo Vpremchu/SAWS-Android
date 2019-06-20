@@ -1,10 +1,15 @@
 package presentation;
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -27,12 +32,15 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import domain.Profile;
 import domain.ProfileListener;
 import liveVideoBroadcaster.LiveVideoBroadcasterActivity;
 import liveVideoBroadcaster.R;
 import logic.ImageLoader;
+
+import static android.provider.Settings.Secure.ANDROID_ID;
 
 public class ProfileActivity extends AppCompatActivity {
     private RequestQueue queue;
@@ -46,6 +54,7 @@ public class ProfileActivity extends AppCompatActivity {
     private ImageView imageUrlView;
     private String globalUsername;
     private String UUID;
+    private static final int PERMISSION_READ_STATE = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,8 +64,9 @@ public class ProfileActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null || !extras.isEmpty()) {
             globalUsername = extras.getString("username");
-            UUID = extras.getString("UUID");
         }
+
+        UUID = getUUID();
 
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
 
@@ -145,6 +155,7 @@ public class ProfileActivity extends AppCompatActivity {
                         Toast.makeText(ProfileActivity.this, "Could not logout!", Toast.LENGTH_LONG).show();
                     } else {
                         Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                        intent.putExtra("UUID", UUID);
                         startActivity(intent);
                     }
                 } catch (Exception e) {
@@ -173,5 +184,25 @@ public class ProfileActivity extends AppCompatActivity {
         intent.putExtra("UUID", UUID);
         intent.putExtra("username", globalUsername);
         startActivity(intent);
+    }
+
+
+
+    @SuppressLint("HardwareIds")
+    public String getUUID() {
+        final TelephonyManager tm = (TelephonyManager) getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
+
+        final String tmDevice, tmSerial, androidId;
+
+        if (ContextCompat.checkSelfPermission(ProfileActivity.this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(ProfileActivity.this, new String[]{Manifest.permission.READ_PHONE_STATE}, PERMISSION_READ_STATE);
+
+        tmDevice = "" + tm.getDeviceId();
+        tmSerial = "" + tm.getSimSerialNumber();
+        androidId = "" + android.provider.Settings.Secure.getString(getContentResolver(), ANDROID_ID);
+
+        java.util.UUID deviceUuid = new UUID(androidId.hashCode(), ((long) tmDevice.hashCode() << 32) | tmSerial.hashCode());
+        return deviceUuid.toString();
     }
 }
