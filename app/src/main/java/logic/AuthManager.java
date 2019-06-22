@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Base64;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.DataOutputStream;
@@ -14,7 +15,14 @@ import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 import domain.AuthResult;
 import domain.LoginResult;
@@ -38,6 +46,37 @@ public class AuthManager {
         } else {
             return false;
         }
+    }
+
+    public void clearStoredCredentials() {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.clear();
+        editor.apply();
+    }
+
+    public boolean storeCredentials(String username, JSONObject jsonObject, byte[] key, byte[] iv) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        JSONObject payload = null;
+        try {
+            payload = jsonObject.getJSONObject("payload");
+            editor.putString("username", username);
+            editor.putString("certificate", CryptoManager.decryptAES(payload.getString("certificate"), key, iv));
+            editor.putString("privateKey", CryptoManager.decryptAES(payload.getString("privateKey"), key, iv));
+            editor.apply();
+            return true;
+        } catch (JSONException e) {
+            System.out.println(e.getMessage());
+            return false;
+        }
+    }
+
+    public JSONObject getStoredCredentials() throws JSONException {
+        JSONObject credentials = new JSONObject();
+        credentials.put("username", sharedPreferences.getString("username",""));
+        credentials.put("certificate", sharedPreferences.getString("certificate",""));
+        credentials.put("privateKey", sharedPreferences.getString("privateKey",""));
+
+        return credentials;
     }
 
     public AuthManager setAuthDetails(String username, String password) {

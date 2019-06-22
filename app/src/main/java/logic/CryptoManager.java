@@ -6,6 +6,9 @@ package logic;
 
 import android.util.Base64;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +53,7 @@ public class CryptoManager {
     //GET PRIVATE KEY FROM STRING
     public static RSAPrivateKey getPrivateKeyFromString(String key) throws IOException, GeneralSecurityException {
         String privateKeyPEM = key;
-        privateKeyPEM = privateKeyPEM.replace("-----BEGIN PRIVATE KEY-----\n", "");
+        privateKeyPEM = privateKeyPEM.replace("-----BEGIN PRIVATE KEY-----", "");
         privateKeyPEM = privateKeyPEM.replace("-----END PRIVATE KEY-----", "");
         byte[] encoded = Base64.decode(privateKeyPEM, Base64.NO_WRAP);
         KeyFactory kf = KeyFactory.getInstance("RSA");
@@ -72,7 +75,7 @@ public class CryptoManager {
     }
 
     //SIGN SIGNATURE
-    public static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException {
+    private static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException {
         Signature sign = Signature.getInstance("SHA256withRSA");
         sign.initSign(privateKey);
         sign.update(message.getBytes(StandardCharsets.UTF_8));
@@ -80,7 +83,7 @@ public class CryptoManager {
     }
 
     //VERIFY SIGNATURE WITH PUBLIC KEY
-    public static boolean verify(PublicKey publicKey, String message, String signature) throws SignatureException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException {
+    private static boolean verify(PublicKey publicKey, String message, String signature) throws SignatureException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException {
         Signature sign = Signature.getInstance("SHA256withRSA");
         sign.initVerify(publicKey);
         sign.update(message.getBytes(StandardCharsets.UTF_8));
@@ -120,6 +123,12 @@ public class CryptoManager {
         return iv;
     }
 
+    public static boolean verifySignature(JSONObject response) throws IOException, GeneralSecurityException, JSONException {
+        JSONObject payload = response.getJSONObject("payload");
+        String signature = response.getString("signature");
+        return verify(getPublicKeyFromString(PUBLIC_KEY_PEM), payload.toString(), signature);
+    }
+
     public static String encryptAES(String payload, byte[] key, byte[] iv) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
@@ -143,7 +152,7 @@ public class CryptoManager {
         return new String(plainText);
     }
 
-    public static byte[] hexStringToByteArray(String s) {
+    private static byte[] hexStringToByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
@@ -153,7 +162,7 @@ public class CryptoManager {
         return data;
     }
 
-    public static String bytesToHex(byte[] bytes) {
+    private static String bytesToHex(byte[] bytes) {
         final char[] hexArray = "0123456789ABCDEF".toCharArray();
         char[] hexChars = new char[bytes.length * 2];
         for ( int j = 0; j < bytes.length; j++ ) {
@@ -169,5 +178,15 @@ public class CryptoManager {
         mac.init(new SecretKeySpec(Base64.encodeToString(key, Base64.NO_WRAP).getBytes(), "HmacSHA256"));
         byte[] result = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
         return bytesToHex(result).toLowerCase();
+    }
+
+    public static JSONObject createResponseBody(JSONObject payload, RSAPrivateKey privateKey) throws UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, JSONException {
+        String correctedPayload = payload.toString().replace("\\", "");
+        String signature = sign(privateKey, correctedPayload);
+        JSONObject body = new JSONObject();
+        body.put("payload", payload);
+        body.put("signature", signature);
+
+        return body;
     }
 }
