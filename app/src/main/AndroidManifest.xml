@@ -29,15 +29,19 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
-        <activity android:name="presentation.LoginActivity">
+        <activity android:name="presentation.SecureLoginActivity" android:screenOrientation="portrait">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name="presentation.LoginActivity">
+
+        </activity>
         <activity
-            android:name=".LiveVideoBroadcasterActivity"
+            android:name="presentation.LiveVideoBroadcasterActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:theme="@style/AppThemeDark" />
 
