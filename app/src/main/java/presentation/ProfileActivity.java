@@ -51,7 +51,6 @@ public class ProfileActivity extends AppCompatActivity {
     // Authentication variables
     private AuthManager authManager;
     private RequestQueue queue;
-    private ProfileListener listener;
     private Profile profile;
     private String userName;
     private String imageUrl;
