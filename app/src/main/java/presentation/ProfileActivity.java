@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import domain.Profile;
-import domain.ProfileListener;
 import liveVideoBroadcaster.R;
 import logic.AuthManager;
 import logic.CryptoManager;
