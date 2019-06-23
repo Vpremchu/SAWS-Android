@@ -1,4 +1,4 @@
-package liveVideoBroadcaster;
+package logic;
 
 import android.app.Dialog;
 import android.os.Bundle;
@@ -15,6 +15,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 
 import io.antmedia.android.broadcaster.utils.Resolution;
+import liveVideoBroadcaster.R;
+import presentation.LiveVideoBroadcasterActivity;
 
 /**
  * Created by faraway on 2/3/15.

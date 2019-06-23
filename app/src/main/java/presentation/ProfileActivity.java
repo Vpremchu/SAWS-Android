@@ -28,7 +28,6 @@ import com.android.volley.toolbox.BasicNetwork;
 import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -40,8 +39,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import domain.Profile;
-import domain.ProfileListener;
-import liveVideoBroadcaster.LiveVideoBroadcasterActivity;
 import liveVideoBroadcaster.R;
 import logic.AuthManager;
 import logic.CryptoManager;
@@ -54,7 +51,6 @@ public class ProfileActivity extends AppCompatActivity {
     // Authentication variables
     private AuthManager authManager;
     private RequestQueue queue;
-    private ProfileListener listener;
     private Profile profile;
     private String userName;
     private String imageUrl;

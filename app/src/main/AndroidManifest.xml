@@ -41,7 +41,7 @@
 
         </activity>
         <activity
-            android:name=".LiveVideoBroadcasterActivity"
+            android:name="presentation.LiveVideoBroadcasterActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:theme="@style/AppThemeDark" />
 

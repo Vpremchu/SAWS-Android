@@ -40,7 +40,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 import domain.OnLoginListener;
-import liveVideoBroadcaster.LiveVideoBroadcasterActivity;
 import liveVideoBroadcaster.R;
 
 import static android.provider.Settings.Secure.ANDROID_ID;
