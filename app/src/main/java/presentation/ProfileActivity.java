@@ -28,7 +28,6 @@ import com.android.volley.toolbox.BasicNetwork;
 import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,7 +40,6 @@ import java.util.UUID;
 
 import domain.Profile;
 import domain.ProfileListener;
-import liveVideoBroadcaster.LiveVideoBroadcasterActivity;
 import liveVideoBroadcaster.R;
 import logic.AuthManager;
 import logic.CryptoManager;

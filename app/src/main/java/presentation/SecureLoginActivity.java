@@ -33,8 +33,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.CookieManager;
-import java.net.CookieStore;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -50,7 +48,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
 import domain.RequestSingleton;
-import liveVideoBroadcaster.LiveVideoBroadcasterActivity;
 import liveVideoBroadcaster.R;
 import logic.AuthManager;
 import logic.CryptoManager;

@@ -1,4 +1,4 @@
-package liveVideoBroadcaster;
+package presentation;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -54,7 +54,6 @@ import com.android.volley.toolbox.BasicNetwork;
 import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
@@ -63,7 +62,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -82,10 +80,11 @@ import domain.MessageIO;
 import io.antmedia.android.broadcaster.ILiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.LiveVideoBroadcaster;
 import io.antmedia.android.broadcaster.utils.Resolution;
+import logic.CameraResolutionsFragment;
+import liveVideoBroadcaster.R;
 import logic.AuthManager;
 import logic.ChatBoxAdapter;
 import logic.CryptoManager;
-import presentation.ProfileActivity;
 
 import static android.provider.Settings.Secure.ANDROID_ID;
 
