@@ -70,6 +70,23 @@ public class AuthManager {
         }
     }
 
+    public boolean storeToken(JSONObject response) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        JSONObject payload = null;
+        try {
+            payload = response.getJSONObject("payload");
+            editor.putString("token", payload.getString("token"));
+            editor.apply();
+            return true;
+        } catch (JSONException e) {
+            System.out.println(e.getMessage());
+            return false;
+        }
+    }
+
+    public String getToken() {
+        return sharedPreferences.getString("token","");
+    }
     public JSONObject getStoredCredentials() throws JSONException {
         JSONObject credentials = new JSONObject();
         credentials.put("username", sharedPreferences.getString("username",""));

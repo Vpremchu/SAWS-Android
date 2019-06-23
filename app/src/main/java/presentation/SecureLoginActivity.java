@@ -33,6 +33,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.CookieManager;
+import java.net.CookieStore;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -69,7 +71,7 @@ public class SecureLoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_secure_login);
 
-        getUUID();
+        System.out.println(getUUID());
         SharedPreferences sharedPreferences = getSharedPreferences("localStorage", MODE_PRIVATE);
         authManager = new AuthManager(sharedPreferences);
 
@@ -99,7 +101,7 @@ public class SecureLoginActivity extends AppCompatActivity {
 
                 final byte[] key = CryptoManager.generateAESKey();
                 final byte[] iv = CryptoManager.generateAESIV();
-                String UUID = "UUID"; //TODO remove - serverside
+                String UUID = getUUID();
 
                 JSONObject body = new JSONObject();
                 JSONObject payload = new JSONObject();
@@ -126,6 +128,7 @@ public class SecureLoginActivity extends AppCompatActivity {
                                 @Override
                                 public void onResponse(JSONObject response) {
                                     try {
+
                                         authManager.storeCredentials(username, response, key, iv);
                                         login();
                                     } catch (NoSuchPaddingException e) {
@@ -187,6 +190,7 @@ public class SecureLoginActivity extends AppCompatActivity {
                         public void onResponse(JSONObject response) {
                             try {
                                 if(CryptoManager.verifySignature(response)) {
+                                    authManager.storeToken(response);
                                     Intent intent = new Intent(getApplicationContext(), LiveVideoBroadcasterActivity.class);
                                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                     intent.putExtra("UUID", getUUID());

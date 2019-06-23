@@ -102,86 +102,71 @@
                 android:layout_gravity="center_horizontal"
                 android:textAppearance="?android:textAppearanceMedium" />
 
+            <Button
+                android:id="@+id/toggle_profile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/Base.Widget.AppCompat.Button.Colored"
+                android:textColor="@android:color/white"
+                android:text="@string/profile"
+                android:onClick="toggleBroadcasting"
+                android:layout_gravity="center_horizontal"
+                android:textAppearance="?android:textAppearanceMedium" />
+
         </LinearLayout>
     </LinearLayout>
 
-    <ScrollView
-        android:id="@+id/oldScrollView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:paddingBottom="150dp"
-        android:background="@android:color/white"
+    <LinearLayout
+        android:id="@+id/chatView"
+        android:weightSum="3"
+        android:orientation="vertical"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-
-        <TextView
-            android:id="@+id/chat1View"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textColor="@color/black_overlay"
-            android:textSize="30sp"
-            tools:layout_editor_absoluteX="1dp"
-            tools:layout_editor_absoluteY="-3dp" />
-    </ScrollView>
-
-    <RelativeLayout
         android:layout_width="match_parent"
+        android:background="@android:color/white"
+        android:textColor="@android:color/black"
         android:layout_height="match_parent"
         tools:context=".LiveVideoBroadcasterActivity">
-        <LinearLayout
-            android:id="@+id/chatView"
-            android:weightSum="3"
-            android:orientation="vertical"
-            android:visibility="gone"
+
+        <android.support.v7.widget.RecyclerView
+            android:layout_weight="3"
+            android:id="@+id/messagelist"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="0dp"
+            android:textColor="@android:color/black"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:scrollbars="vertical"/>
+        <View
+            android:layout_marginTop="5dp"
+            android:id="@+id/separator"
+            android:layout_width="match_parent"
+            android:textColor="@android:color/black"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"/>
 
-            <android.support.v7.widget.RecyclerView
-                android:layout_weight="3"
-                android:id="@+id/messagelist"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clipToPadding="false"
-                android:scrollbars="vertical"/>
-            <View
-                android:layout_marginTop="5dp"
-                android:id="@+id/separator"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@android:color/darker_gray"/>
+        <LinearLayout
+            android:weightSum="3"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-            <LinearLayout
-                android:weightSum="3"
-                android:orientation="horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-            </LinearLayout>
+        <EditText
+            android:id="@+id/message"
+            android:layout_weight="3"
+            android:textColorHint="@android:color/black"
+            android:textColor="@android:color/black"
+            android:layout_width="0dp"
+            android:hint="@string/your_message"
+            android:layout_height="match_parent" />
 
-            <EditText
-
-                android:id="@+id/message"
-                android:layout_weight="3"
-                android:layout_width="wrap_content"
-                android:hint="your message"
-
-                android:layout_height="match_parent" />
-
-            <Button
-
-                android:id="@+id/send"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="#00000000"
-                android:text="send"
-                />
-
+        <Button
+            android:id="@+id/send"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/darker_gray"
+            android:text="@string/send"
+            />
+        </LinearLayout>
     </LinearLayout>
-</RelativeLayout>
 
 </android.support.design.widget.CoordinatorLayout>

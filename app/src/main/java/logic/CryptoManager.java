@@ -75,7 +75,7 @@ public class CryptoManager {
     }
 
     //SIGN SIGNATURE
-    private static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException {
+    public static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException {
         Signature sign = Signature.getInstance("SHA256withRSA");
         sign.initSign(privateKey);
         sign.update(message.getBytes(StandardCharsets.UTF_8));

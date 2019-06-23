@@ -45,6 +45,10 @@
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:theme="@style/AppThemeDark" />
 
+        <activity android:name="presentation.ProfileActivity"/>
+            <!--android:theme="@style/AppThemeDark"-->
+            <!--/>-->
+
         <service android:name="io.antmedia.android.broadcaster.LiveVideoBroadcaster" />
     </application>
 
