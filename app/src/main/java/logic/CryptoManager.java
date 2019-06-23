@@ -180,6 +180,19 @@ public class CryptoManager {
         return bytesToHex(result).toLowerCase();
     }
 
+    public static boolean verifyHMAC(JSONObject response, byte[] key) throws NoSuchAlgorithmException, InvalidKeyException, JSONException {
+        JSONObject payload = response.getJSONObject("payload");
+        String correctedPayload = payload.toString().replace("\\", "");
+        String signature = response.getString("signature");
+
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(Base64.encodeToString(key, Base64.NO_WRAP).getBytes(), "HmacSHA256"));
+        byte[] result = mac.doFinal(correctedPayload.getBytes(StandardCharsets.UTF_8));
+        String hmac = bytesToHex(result).toLowerCase();
+
+        return hmac.equals(signature);
+    }
+
     public static JSONObject createResponseBody(JSONObject payload, RSAPrivateKey privateKey) throws UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, JSONException {
         String correctedPayload = payload.toString().replace("\\", "");
         String signature = sign(privateKey, correctedPayload);

@@ -79,7 +79,7 @@ public class SecureLoginActivity extends AppCompatActivity {
         authButton = findViewById(R.id.AuthButton);
         loadingLabel = findViewById(R.id.LoadingLabel);
 
-        //authManager.clearStoredCredentials();
+        authManager.clearStoredCredentials();
 
         if(authManager.hasLocalCertificate()) {
             loadingLabel.setText("Logging in...");
@@ -128,9 +128,10 @@ public class SecureLoginActivity extends AppCompatActivity {
                                 @Override
                                 public void onResponse(JSONObject response) {
                                     try {
-
-                                        authManager.storeCredentials(username, response, key, iv);
-                                        login();
+                                        if(CryptoManager.verifyHMAC(response, key)) {
+                                            authManager.storeCredentials(username, response, key, iv);
+                                            login();
+                                        }
                                     } catch (NoSuchPaddingException e) {
                                         e.printStackTrace();
                                     } catch (InvalidKeyException e) {
@@ -142,6 +143,8 @@ public class SecureLoginActivity extends AppCompatActivity {
                                     } catch (BadPaddingException e) {
                                         e.printStackTrace();
                                     } catch (InvalidAlgorithmParameterException e) {
+                                        e.printStackTrace();
+                                    } catch (JSONException e) {
                                         e.printStackTrace();
                                     }
                                 }
